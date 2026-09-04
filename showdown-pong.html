@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Showdown Pong (80s Arcade Edition)</title>
+    <style>
+        :root {
+            --felt-green: radial-gradient(circle, #145a32 0%, #0a2f18 100%);
+            --wood-trim: #4a2711;
+            --gold: #d4af37;
+            --crt-green: #33ff33;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #110d0a;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            margin: 5px 0 15px 0;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1e1510;
+            border: 12px solid var(--wood-trim);
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.9);
+            padding: 15px;
+            position: relative;
+        }
+
+        /* Stats & Pot Header */
+        .hud {
+            display: flex;
+            width: 800px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 2px dashed rgba(212, 175, 55, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .hud-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hud-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .hud-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .pot-display {
+            text-align: center;
+            border: 2px solid var(--gold);
+            padding: 5px 15px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.4);
+        }
+
+        /* Canvas Arena */
+        canvas {
+            background: var(--felt-green);
+            display: block;
+            border: 4px solid #000;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+            cursor: none;
+        }
+
+        /* Hands Display at the bottom */
+        .hands-area {
+            display: flex;
+            width: 800px;
+            justify-content: space-between;
+            margin-top: 15px;
+            gap: 20px;
+        }
+
+        .player-hand-box {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1.5px dashed rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .hand-title {
+            font-size: 0.8rem;
+            color: var(--gold);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .cards-list {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            min-height: 62px;
+        }
+
+        /* Playing Card Styles */
+        .card {
+            width: 42px;
+            height: 58px;
+            background: #f5f6fa;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4px;
+            box-sizing: border-box;
+            color: #111;
+            font-weight: bold;
+            font-size: 0.8rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+        }
+
+        .card.empty {
+            background: rgba(255,255,255,0.03);
+            border: 1.5px dashed rgba(255,255,255,0.15);
+            box-shadow: none;
+        }
+
+        .card .card-suit {
+            font-size: 1.2rem;
+            text-align: center;
+            margin-top: -4px;
+        }
+
+        .card .card-invert {
+            transform: rotate(180deg);
+            text-align: right;
+        }
+
+        /* 4-Color Deck Colors */
+        .suit-spade { color: #1e272e; }
+        .suit-heart { color: #eb3b5a; }
+        .suit-diamond { color: #2d98da; }
+        .suit-club { color: #20bf6b; }
+
+        /* overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 8, 6, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #a06e12 0%, #614002 100%);
+            border: 1px solid var(--gold);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #c78d20 0%, #7e5302 100%);
+        }
+
+        /* Showdown Modal Toast */
+        #showdown-toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(10, 10, 10, 0.98);
+            border: 3px solid var(--gold);
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            z-index: 20;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.7);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-width: 320px;
+            pointer-events: none; /* Crucial: stops inactive elements from blocking card area clicks */
+        }
+
+        #showdown-toast.active {
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .showdown-vs {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            gap: 10px;
+        }
+
+        .showdown-hand-summary {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .toast-winner {
+            font-size: 1.5rem;
+            color: #20bf6b;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .mute-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            text-decoration: underline;
+            font-family: inherit;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TEXAS SHOWDOWN PONG</h1>
+        <p class="subtitle">An 80s arcade fusion of paddle tennis and high-stakes poker</p>
+    </header>
+
+    <div class="game-container">
+
+        <!-- Start Game Screen -->
+        <div id="menu-overlay" class="overlay">
+            <h2 style="color: var(--gold); margin: 0 0 10px 0;">PADDLE UP & BUY IN</h2>
+            <p style="max-width: 500px; font-size: 0.9rem; line-height: 1.5; color: #ccc;">
+                Deflect the spinning poker chip past the Dealer. Every point scored deals a card to your hand and adds money to the Center Pot. First to draw 5 cards triggers a Showdown. Best poker hand wins the pot!
+            </p>
+            <button class="btn" id="start-btn">Buy In ($1,000)</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-overlay" class="overlay" style="display: none;">
+            <h2 style="color: #eb3b5a; margin: 0 0 10px 0;">BUSTED!</h2>
+            <p id="gameover-msg">The Dealer cleaned you out.</p>
+            <button class="btn" id="rebuy-btn">Re-Buy ($1,000)</button>
+        </div>
+
+        <!-- Showdown Pop-up -->
+        <div id="showdown-toast">
+            <h3 style="margin: 0; color: var(--gold); letter-spacing: 2px;">SHOWDOWN!</h3>
+            
+            <div class="showdown-vs">
+                <div>
+                    <div style="color: #2d98da; font-weight: bold;">YOU</div>
+                    <div id="toast-player-hand" class="showdown-hand-summary">PAIR OF ACES</div>
+                </div>
+                <div style="align-self: center; font-weight: bold; color: #888;">VS</div>
+                <div>
+                    <div style="color: #eb3b5a; font-weight: bold;">DEALER</div>
+                    <div id="toast-dealer-hand" class="showdown-hand-summary">HIGH CARD</div>
+                </div>
+            </div>
+
+            <div id="toast-winner" class="toast-winner">YOU WIN THE POT!</div>
+            <div id="toast-pot-size" style="font-size: 1.1rem; color: var(--gold); margin-top: 5px;">+$500 CHIPS</div>
+        </div>
+
+        <!-- HUD Panel -->
+        <div class="hud">
+            <div class="hud-block">
+                <span class="hud-label">Your Stack</span>
+                <span id="player-chips" class="hud-value">$1,000</span>
+            </div>
+
+            <div class="pot-display">
+                <span class="hud-label" style="display:block; font-size:0.7rem;">Center Pot</span>
+                <span id="center-pot" class="hud-value" style="color: var(--gold);">$0</span>
+            </div>
+
+            <div class="hud-block" style="text-align: right;">
+                <span class="hud-label">Dealer Stack</span>
+                <span id="dealer-chips" class="hud-value">$1,000</span>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <canvas id="pongCanvas" width="800" height="400"></canvas>
+
+        <!-- Cards Display Area -->
+        <div class="hands-area">
+            <div class="player-hand-box">
+                <div class="hand-title" style="color: #2d98da;">Your Hand</div>
+                <div id="player-cards" class="cards-list">
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                </div>
+            </div>
+
+            <div class="player-hand-box">
+                <div class="hand-title" style="color: #eb3b5a;">Dealer Hand</div>
+                <div id="dealer-cards" class="cards-list">
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                </div>
+            </div>
+        </div>
+
+        <button class="mute-btn" id="mute-btn">Mute SFX</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('pongCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- GAME PARAMETERS ---
+        const PADDLE_WIDTH = 12;
+        const PADDLE_HEIGHT = 80;
+        const CHIP_RADIUS = 10;
+        const MAX_BOUNCE_ANGLE = Math.PI / 3; 
+
+        let ball = { x: 0, y: 0, vx: 0, vy: 0, speed: 6, rotation: 0 };
+        let player = { x: 20, y: 0, score: 0, chips: 1000 };
+        let cpu = { x: 0, y: 0, score: 0, chips: 1000 };
+        let pot = 0;
+
+        let deck = [];
+        let playerHand = [];
+        let dealerHand = [];
+
+        let gameStarted = false;
+        let isPaused = false;
+        let gameOver = false; // Declared globally
+        let isMuted = false;
+        let lastTime = 0;
+
+        // Inputs
+        let keys = {};
+        let mousePos = { y: 200 };
+
+        // --- DECK DEFINITION ---
+        const SUITS = [
+            { symbol: '♠', class: 'suit-spade' },
+            { symbol: '♥', class: 'suit-heart' },
+            { symbol: '♦', class: 'suit-diamond' },
+            { symbol: '♣', class: 'suit-club' }
+        ];
+        const VALUES = [
+            { val: '2', num: 2 }, { val: '3', num: 3 }, { val: '4', num: 4 },
+            { val: '5', num: 5 }, { val: '6', num: 6 }, { val: '7', num: 7 },
+            { val: '8', num: 8 }, { val: '9', num: 9 }, { val: '10', num: 10 },
+            { val: 'J', num: 11 }, { val: 'Q', num: 12 }, { val: 'K', num: 13 },
+            { val: 'A', num: 14 }
+        ];
+
+        // --- RETRO SYNTHESIZER SOUND GENERATOR ---
+        let audioCtx = null;
+
+        function initAudio() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            } catch (e) {
+                console.warn("Web Audio API not supported or blocked by browser settings: ", e);
+            }
+        }
+
+        function playSynthSound(type) {
+            if (isMuted || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'hit_wall') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(220, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'hit_paddle') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(440, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'deal_card') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'showdown_win') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'sawtooth';
+                        o.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        g.gain.setValueAtTime(0.08, now + idx * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.4);
+                        o.start(now + idx * 0.1);
+                        o.stop(now + idx * 0.1 + 0.4);
+                    });
+                } else if (type === 'showdown_lose') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.5);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                }
+            } catch (e) {
+                console.warn("Sound play failed gracefully: ", e);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? "Unmute SFX" : "Mute SFX";
+        }
+
+        // --- CARD MANAGEMENT ---
+        function resetDeck() {
+            deck = [];
+            for (let suit of SUITS) {
+                for (let val of VALUES) {
+                    deck.push({ suit: suit.symbol, cssClass: suit.class, value: val.val, numValue: val.num });
+                }
+            }
+            shuffleDeck();
+        }
+
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        function drawCard() {
+            if (deck.length === 0) resetDeck();
+            return deck.pop();
+        }
+
+        function renderHTMLCard(card) {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.innerHTML = `
+                <div class="${card.cssClass}">${card.value}</div>
+                <div class="card-suit ${card.cssClass}">${card.suit}</div>
+                <div class="card-invert ${card.cssClass}">${card.value}</div>
+            `;
+            return el;
+        }
+
+        function updateHandsUI() {
+            const pContainer = document.getElementById('player-cards');
+            pContainer.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                if (playerHand[i]) {
+                    pContainer.appendChild(renderHTMLCard(playerHand[i]));
+                } else {
+                    const empty = document.createElement('div');
+                    empty.className = 'card empty';
+                    pContainer.appendChild(empty);
+                }
+            }
+
+            const cContainer = document.getElementById('dealer-cards');
+            cContainer.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                if (dealerHand[i]) {
+                    cContainer.appendChild(renderHTMLCard(dealerHand[i]));
+                } else {
+                    const empty = document.createElement('div');
+                    empty.className = 'card empty';
+                    cContainer.appendChild(empty);
+                }
+            }
+        }
+
+        // --- POKER EVALUATOR ---
+        function evaluate5CardHand(hand) {
+            const sorted = [...hand].sort((a,b) => b.numValue - a.numValue);
+
+            let suitMap = {};
+            hand.forEach(c => suitMap[c.suit] = (suitMap[c.suit] || 0) + 1);
+            let isFlush = Object.values(suitMap).some(count => count === 5);
+
+            let rankMap = {};
+            hand.forEach(c => rankMap[c.numValue] = (rankMap[c.numValue] || 0) + 1);
+            let frequencies = Object.entries(rankMap).map(([rank, count]) => ({
+                rank: parseInt(rank),
+                count: count
+            })).sort((a,b) => b.count - a.count || b.rank - a.rank);
+
+            let uniqueRanks = [...new Set(hand.map(c => c.numValue))].sort((a,b) => b - a);
+            let isStraight = false;
+            let straightHigh = 0;
+
+            if (uniqueRanks.length === 5) {
+                if (uniqueRanks[0] - uniqueRanks[4] === 4) {
+                    isStraight = true;
+                    straightHigh = uniqueRanks[0];
+                } else if (uniqueRanks.includes(14) && uniqueRanks.includes(5) && uniqueRanks.includes(4) && uniqueRanks.includes(3) && uniqueRanks.includes(2)) {
+                    isStraight = true;
+                    straightHigh = 5; 
+                }
+            }
+
+            if (isStraight && isFlush) {
+                if (straightHigh === 14) return { strength: 9, name: "ROYAL FLUSH", high: 14 };
+                return { strength: 8, name: "STRAIGHT FLUSH", high: straightHigh };
+            }
+            if (frequencies[0].count === 4) {
+                return { strength: 7, name: "FOUR OF A KIND", high: frequencies[0].rank };
+            }
+            if (frequencies[0].count === 3 && frequencies[1]?.count === 2) {
+                return { strength: 6, name: "FULL HOUSE", high: frequencies[0].rank };
+            }
+            if (isFlush) {
+                return { strength: 5, name: "FLUSH", high: sorted[0].numValue };
+            }
+            if (isStraight) {
+                return { strength: 4, name: "STRAIGHT", high: straightHigh };
+            }
+            if (frequencies[0].count === 3) {
+                return { strength: 3, name: "THREE OF A KIND", high: frequencies[0].rank };
+            }
+            if (frequencies[0].count === 2 && frequencies[1]?.count === 2) {
+                return { strength: 2, name: "TWO PAIR", high: Math.max(frequencies[0].rank, frequencies[1].rank) };
+            }
+            if (frequencies[0].count === 2) {
+                let textLabels = { 11: 'Jacks', 12: 'Queens', 13: 'Kings', 14: 'Aces' };
+                let label = textLabels[frequencies[0].rank] || `${frequencies[0].rank}s`;
+                return { strength: 1, name: `PAIR OF ${label.toUpperCase()}`, high: frequencies[0].rank };
+            }
+
+            let labels = { 11: 'Jack', 12: 'Queen', 13: 'King', 14: 'Ace' };
+            let valLabel = labels[sorted[0].numValue] || sorted[0].value;
+            return { strength: 0, name: `HIGH CARD (${valLabel.toUpperCase()})`, high: sorted[0].numValue };
+        }
+
+        // --- CORE PONG MOVEMENT & PHYSICS ---
+        function resetBall(direction) {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speed = 6.5;
+            
+            let angle = (Math.random() * 60 - 30) * Math.PI / 180;
+            ball.vx = direction * ball.speed * Math.cos(angle);
+            ball.vy = ball.speed * Math.sin(angle);
+        }
+
+        function updateGame() {
+            if (!gameStarted || isPaused) return;
+
+            // --- 1. Player Paddle Movement ---
+            if (keys['ArrowUp'] || keys['w'] || keys['W']) {
+                player.y -= 7;
+            } else if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+                player.y += 7;
+            } else {
+                let targetY = mousePos.y - PADDLE_HEIGHT / 2;
+                player.y += (targetY - player.y) * 0.15;
+            }
+
+            if (player.y < 5) player.y = 5;
+            if (player.y > canvas.height - PADDLE_HEIGHT - 5) {
+                player.y = canvas.height - PADDLE_HEIGHT - 5;
+            }
+
+            // --- 2. CPU Paddle AI Movement ---
+            let cpuTargetY = ball.y - PADDLE_HEIGHT / 2;
+            let reactionFactor = 0.07 + (currentLevelSpeedMultiplier() * 0.015);
+            cpu.y += (cpuTargetY - cpu.y) * reactionFactor;
+
+            if (cpu.y < 5) cpu.y = 5;
+            if (cpu.y > canvas.height - PADDLE_HEIGHT - 5) {
+                cpu.y = canvas.height - PADDLE_HEIGHT - 5;
+            }
+
+            // --- 3. Ball Physics & Collision ---
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            ball.rotation += 0.05; 
+
+            if (ball.y - CHIP_RADIUS < 0) {
+                ball.y = CHIP_RADIUS;
+                ball.vy = -ball.vy;
+                playSynthSound('hit_wall');
+            } else if (ball.y + CHIP_RADIUS > canvas.height) {
+                ball.y = canvas.height - CHIP_RADIUS;
+                ball.vy = -ball.vy;
+                playSynthSound('hit_wall');
+            }
+
+            if (ball.vx < 0 && ball.x - CHIP_RADIUS <= player.x + PADDLE_WIDTH && ball.x >= player.x) {
+                if (ball.y >= player.y && ball.y <= player.y + PADDLE_HEIGHT) {
+                    let relativeIntersectY = (player.y + (PADDLE_HEIGHT / 2)) - ball.y;
+                    let normalizedIntersectY = relativeIntersectY / (PADDLE_HEIGHT / 2);
+                    let bounceAngle = normalizedIntersectY * MAX_BOUNCE_ANGLE;
+
+                    ball.speed = Math.min(15, ball.speed + 0.35); 
+                    ball.vx = ball.speed * Math.cos(bounceAngle);
+                    ball.vy = -ball.speed * Math.sin(bounceAngle);
+                    ball.x = player.x + PADDLE_WIDTH + CHIP_RADIUS; 
+
+                    playSynthSound('hit_paddle');
+                }
+            }
+
+            if (ball.vx > 0 && ball.x + CHIP_RADIUS >= cpu.x && ball.x <= cpu.x + PADDLE_WIDTH) {
+                if (ball.y >= cpu.y && ball.y <= cpu.y + PADDLE_HEIGHT) {
+                    let relativeIntersectY = (cpu.y + (PADDLE_HEIGHT / 2)) - ball.y;
+                    let normalizedIntersectY = relativeIntersectY / (PADDLE_HEIGHT / 2);
+                    let bounceAngle = normalizedIntersectY * MAX_BOUNCE_ANGLE;
+
+                    ball.speed = Math.min(15, ball.speed + 0.35);
+                    ball.vx = -ball.speed * Math.cos(bounceAngle);
+                    ball.vy = -ball.speed * Math.sin(bounceAngle);
+                    ball.x = cpu.x - CHIP_RADIUS; 
+
+                    playSynthSound('hit_paddle');
+                }
+            }
+
+            // --- 4. Goal / Score System ---
+            if (ball.x < 0) {
+                dealerHand.push(drawCard());
+                pot += 100;
+                playerScoreGoal(1); 
+            } else if (ball.x > canvas.width) {
+                playerHand.push(drawCard());
+                pot += 100;
+                playerScoreGoal(-1); 
+            }
+        }
+
+        function currentLevelSpeedMultiplier() {
+            return Math.max(playerHand.length, dealerHand.length);
+        }
+
+        function playerScoreGoal(direction) {
+            playSynthSound('deal_card');
+            updateHandsUI();
+            updateHUD();
+
+            if (playerHand.length === 5 || dealerHand.length === 5) {
+                triggerShowdown();
+            } else {
+                resetBall(direction);
+            }
+        }
+
+        // --- SHOWDOWN MANAGEMENT ---
+        function triggerShowdown() {
+            isPaused = true;
+
+            const playerEval = evaluate5CardHand(playerHand);
+            const dealerEval = evaluate5CardHand(dealerHand);
+
+            let winnerText = "SPLIT POT!";
+            let playerWin = false;
+            let dealerWin = false;
+
+            if (playerEval.strength > dealerEval.strength) {
+                playerWin = true;
+            } else if (dealerEval.strength > playerEval.strength) {
+                dealerWin = true;
+            } else {
+                if (playerEval.high > dealerEval.high) {
+                    playerWin = true;
+                } else if (dealerEval.high > playerEval.high) {
+                    dealerWin = true;
+                }
+            }
+
+            if (playerWin) {
+                winnerText = "YOU WIN!";
+                player.chips += pot;
+                playSynthSound('showdown_win');
+            } else if (dealerWin) {
+                winnerText = "DEALER WINS!";
+                cpu.chips += pot;
+                playSynthSound('showdown_lose');
+            } else {
+                player.chips += Math.floor(pot / 2);
+                cpu.chips += Math.floor(pot / 2);
+                playSynthSound('deal_card');
+            }
+
+            document.getElementById('toast-player-hand').innerText = playerEval.name;
+            document.getElementById('toast-dealer-hand').innerText = dealerEval.name;
+            document.getElementById('toast-winner').innerText = winnerText;
+            document.getElementById('toast-pot-size').innerText = `+$${pot.toLocaleString()} POT`;
+
+            document.getElementById('showdown-toast').classList.add('active');
+
+            setTimeout(() => {
+                document.getElementById('showdown-toast').classList.remove('active');
+                
+                pot = 0;
+                playerHand = [];
+                dealerHand = [];
+                updateHandsUI();
+                updateHUD();
+
+                if (player.chips <= 0) {
+                    endGame("The Dealer broke your bank!");
+                } else if (cpu.chips <= 0) {
+                    endGame("You broke the Dealer's bank! Incredible play!");
+                } else {
+                    isPaused = false;
+                    resetBall(playerWin ? 1 : -1);
+                }
+            }, 3500);
+        }
+
+        // --- ARTISTIC GRAPHICS RENDERING ---
+        function drawFeltDetails() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(212, 175, 55, 0.15)';
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 70, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+
+            ctx.restore();
+            drawStar(canvas.width / 2, canvas.height / 2, 5, 24, 10, 'rgba(212,175,55,0.06)');
+        }
+
+        function drawStar(cx, cy, spikes, outerRadius, innerRadius, color) {
+            let rot = Math.PI / 2 * 3;
+            let x = cx;
+            let y = cy;
+            let step = Math.PI / spikes;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius;
+                y = cy + Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+
+                x = cx + Math.cos(rot) * innerRadius;
+                y = cy + Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+            ctx.lineTo(cx, cy - outerRadius);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawPokerBall(x, y, radius, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            ctx.fillStyle = '#eb3b5a'; 
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#f5f6fa';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath();
+            ctx.arc(0, 0, radius - 1.5, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawArena() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawFeltDetails();
+
+            ctx.shadowBlur = 10;
+            
+            ctx.shadowColor = '#2d98da';
+            ctx.fillStyle = '#2d98da';
+            ctx.fillRect(player.x, player.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+
+            ctx.shadowColor = '#eb3b5a';
+            ctx.fillStyle = '#eb3b5a';
+            ctx.fillRect(cpu.x, cpu.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+
+            ctx.shadowColor = '#eb3b5a';
+            drawPokerBall(ball.x, ball.y, CHIP_RADIUS, ball.rotation);
+
+            ctx.shadowBlur = 0;
+        }
+
+        // --- GAME SETUP & FLOW ---
+        function updateHUD() {
+            document.getElementById('player-chips').innerText = `$${player.chips.toLocaleString()}`;
+            document.getElementById('dealer-chips').innerText = `$${cpu.chips.toLocaleString()}`;
+            document.getElementById('center-pot').innerText = `$${pot.toLocaleString()}`;
+        }
+
+        function startGame() {
+            initAudio();
+            document.getElementById('menu-overlay').style.display = 'none';
+            document.getElementById('gameover-overlay').style.display = 'none';
+
+            player.chips = 1000;
+            cpu.chips = 1000;
+            pot = 0;
+            playerHand = [];
+            dealerHand = [];
+
+            player.y = canvas.height / 2 - PADDLE_HEIGHT / 2;
+            cpu.x = canvas.width - 20 - PADDLE_WIDTH;
+            cpu.y = canvas.height / 2 - PADDLE_HEIGHT / 2;
+
+            resetDeck();
+            updateHandsUI();
+            updateHUD();
+
+            gameStarted = true;
+            isPaused = false;
+            gameOver = false; 
+
+            resetBall(1);
+
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame(msg) {
+            gameStarted = false;
+            document.getElementById('gameover-msg').innerText = msg;
+            document.getElementById('gameover-overlay').style.display = 'flex';
+        }
+
+        function gameLoop(time) {
+            if (gameStarted) {
+                updateGame();
+                drawArena();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // --- LISTENERS ---
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if (['ArrowUp', 'ArrowDown', 'w', 'W', 's', 'S', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', e => {
+            keys[e.key] = false;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mousePos.y = e.clientY - rect.top;
+        });
+
+        // Programmatic element events
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('rebuy-btn').addEventListener('click', startGame);
+        document.getElementById('mute-btn').addEventListener('click', toggleMute);
+
+    </script>
+</body>
+</html>

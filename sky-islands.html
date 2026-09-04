@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sky Islands Jump — Doodle Jump Game</title>
+<meta name="description" content="A cozy sky-islands doodle jump game. Bounce between floating islands and climb as high as you can." />
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100%;font-family:system-ui,sans-serif}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;
+    background:linear-gradient(to bottom,#7dd3fc,#e0f2fe);color:#1e293b}
+  h1{margin:0;font-size:1.5rem;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+  .hud{display:flex;align-items:center;gap:20px;font-weight:600}
+  .closet-btn{border:0;border-radius:12px;background:#ffffff;color:#0284c7;
+    padding:6px 14px;font-weight:700;font-size:0.95rem;box-shadow:0 3px 8px rgba(0,0,0,.15);
+    cursor:pointer;transition:all 0.15s ease}
+  .closet-btn:hover{background:#e0f2fe;transform:scale(1.04)}
+  .closet-btn:active{transform:scale(0.96)}
+  .frame{width:100%;max-width:400px;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.25);
+    outline:4px solid rgba(255,255,255,.6);position:relative}
+  canvas{display:block;background:#bae6fd;touch-action:none;width:100%;height:auto}
+  .touch{display:none;width:100%;max-width:400px;justify-content:space-between;margin-top:8px}
+  .touch button{border:0;border-radius:16px;background:rgba(255,255,255,.9);
+    color:#0284c7;width:48%;height:64px;font-size:28px;font-weight:700;
+    box-shadow:0 6px 12px rgba(0,0,0,.15);touch-action:none;
+    display:flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color:transparent}
+  .touch button:active{background:#e0f2fe;transform:translateY(2px);box-shadow:0 3px 6px rgba(0,0,0,.15)}
+  p{margin:0;font-size:.9rem}
+  @media (max-width:600px){.touch{display:flex}}
+</style>
+</head>
+<body>
+<h1>Sky Islands Jump</h1>
+<div class="hud">
+  <div>Score: <span id="score">0</span></div>
+  <div>Best: <span id="best">0</span></div>
+  <button id="closetToggleBtn" class="closet-btn">🎨 Outfit</button>
+</div>
+<div class="frame"><canvas id="game" width="400" height="640"></canvas></div>
+<div class="touch">
+  <button id="bl">◀</button>
+  <button id="br">▶</button>
+</div>
+<p>Arrow keys / A D to move · Space to start / restart</p>
+<script>
+(() => {
+  const W=400,H=640,GRAVITY=0.35,JUMP_V=-12,MOVE_SPEED=5;
+  const PLAYER_W=40,PLAYER_H=40,PLATFORM_W=70,PLATFORM_H=16,PLATFORM_COUNT=8;
+  const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+  const scoreEl=document.getElementById('score'),bestEl=document.getElementById('best');
+  const closetToggleBtn=document.getElementById('closetToggleBtn');
+  let best=parseInt(localStorage.getItem('sky-islands-best')||'0',10);bestEl.textContent=best;
+  
+  let started=false,gameOver=false,inCloset=false;
+
+  // Outfit catalog including abstract styles
+  const OUTFITS = [
+    { id: 'leopard', name: 'Leopard Print', type: 'pattern', base: '#facc15', spot: '#78350f' },
+    { id: 'cosmic', name: 'Cosmic Nebula', type: 'gradient', colors: ['#a855f7', '#06b6d4', '#3b82f6'] },
+    { id: 'zebra', name: 'Zebra Stripe', type: 'stripe', c1: '#ffffff', c2: '#18181b' },
+    { id: 'rainbow', name: 'Rainbow', type: 'gradient', colors: ['#ef4444', '#eab308', '#10b981', '#3b82f6', '#ec4899'] },
+    { id: 'disco', name: 'Disco Sparkle', type: 'sparkle', base: '#e2e8f0', shine: '#ffffff' },
+    { id: 'coral', name: 'Coral', type: 'color', color: '#ff7a59' },
+    { id: 'sky', name: 'Sky Blue', type: 'color', color: '#38bdf8' },
+    { id: 'emerald', name: 'Emerald', type: 'color', color: '#10b981' },
+    { id: 'purple', name: 'Purple', type: 'color', color: '#a855f7' },
+    { id: 'gold', name: 'Gold', type: 'color', color: '#eab308' }
+  ];
+  let selectedOutfitIndex = 0;
+
+  // Jump reach calculations to guarantee reachable platforms
+  let lastX = W / 2 - PLATFORM_W / 2;
+  let consecutiveBreakable = 0;
+
+  const getReachableX = (prevX) => {
+    // Maximum horizontal reach given physics parameters (~130px safe jump threshold)
+    const maxShift = 130;
+    let minX = Math.max(0, prevX - maxShift);
+    let maxX = Math.min(W - PLATFORM_W, prevX + maxShift);
+    
+    // Fallback safely if bound margins overlap
+    if (minX > maxX) {
+      const temp = minX;
+      minX = maxX;
+      maxX = temp;
+    }
+    return minX + Math.random() * (maxX - minX);
+  };
+
+  const makePlatforms = () => {
+    const a = [], gap = H / PLATFORM_COUNT;
+    consecutiveBreakable = 0;
+    lastX = W / 2 - PLATFORM_W / 2;
+
+    for (let i = 0; i < PLATFORM_COUNT; i++) {
+      let px = i === 0 ? W / 2 - PLATFORM_W / 2 : getReachableX(lastX);
+      lastX = px;
+      a.push({
+        x: px,
+        y: H - i * gap - 20,
+        moving: false,
+        dir: 1,
+        breakable: false,
+        broken: false,
+        powerUp: null
+      });
+    }
+    return a;
+  };
+    
+  const s={px:W/2-PLAYER_W/2,py:H-120,vx:0,vy:0,keys:{left:false,right:false},
+    platforms:makePlatforms(),scrollY:0,facing:1,dead:false,jetpack:0,boots:0};
+    
+  const reset=()=>{s.px=W/2-PLAYER_W/2;s.py=H-120;s.vx=0;s.vy=JUMP_V;
+    s.platforms=makePlatforms();s.scrollY=0;s.facing=1;s.dead=false;s.jetpack=0;s.boots=0;
+    started=true;gameOver=false;inCloset=false;scoreEl.textContent='0';};
+
+  closetToggleBtn.onclick = () => {
+    inCloset = !inCloset;
+  };
+    
+  addEventListener('keydown',e=>{
+    if(inCloset && (e.key==='Escape'||e.key===' ')){ inCloset=false; return; }
+    if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')s.keys.left=true;
+    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')s.keys.right=true;
+    if((e.key===' '||e.key==='Enter')&&(gameOver||!started)&&!inCloset)reset();
+  });
+  addEventListener('keyup',e=>{
+    if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')s.keys.left=false;
+    if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')s.keys.right=false;
+  });
+
+  const getCanvasCoords = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const scaleX = W / rect.width;
+    const scaleY = H / rect.height;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  };
+
+  const handleStartTap = (e) => {
+    const pos = getCanvasCoords(e);
+    
+    // Closet interface touch/click checks
+    if (inCloset) {
+      // Close button on screen
+      if (pos.x >= W - 60 && pos.x <= W - 15 && pos.y >= 15 && pos.y <= 55) {
+        inCloset = false;
+        return;
+      }
+      // Grid selection
+      const cols = 2, colW = 160, rowH = 50;
+      const startX = W / 2 - colW;
+      const startY = 130;
+      
+      OUTFITS.forEach((outfit, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const bx = startX + col * (colW + 10);
+        const by = startY + row * (rowH + 10);
+        if (pos.x >= bx && pos.x <= bx + colW && pos.y >= by && pos.y <= by + rowH) {
+          selectedOutfitIndex = i;
+        }
+      });
+      return;
+    }
+
+    if (!started || gameOver) { e.preventDefault(); reset(); }
+  };
+
+  canvas.addEventListener('click', handleStartTap);
+  canvas.addEventListener('touchstart', handleStartTap, { passive: false });
+
+  const tm=d=>{s.keys.left=d==='left';s.keys.right=d==='right';};
+  const bl=document.getElementById('bl'),br=document.getElementById('br');
+  bl.ontouchstart=e=>{e.preventDefault();tm('left');};
+  bl.ontouchend=e=>{e.preventDefault();tm('none');};
+  bl.ontouchcancel=e=>{e.preventDefault();tm('none');};
+  br.ontouchstart=e=>{e.preventDefault();tm('right');};
+  br.ontouchend=e=>{e.preventDefault();tm('none');};
+  br.ontouchcancel=e=>{e.preventDefault();tm('none');};
+
+  // Render character skin based on selected outfit pattern
+  const drawPlayerSkin = (outfit, radius) => {
+    if (outfit.type === 'color') {
+      ctx.fillStyle = outfit.color;
+      ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
+    } else if (outfit.type === 'gradient') {
+      const grad = ctx.createLinearGradient(-radius, -radius, radius, radius);
+      outfit.colors.forEach((c, idx) => grad.addColorStop(idx / (outfit.colors.length - 1), c));
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
+    } else if (outfit.type === 'stripe') {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.clip();
+      ctx.fillStyle = outfit.c1; ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
+      ctx.fillStyle = outfit.c2;
+      for (let i = -radius; i < radius; i += 8) {
+        ctx.fillRect(i, -radius, 4, radius * 2);
+      }
+      ctx.restore();
+    } else if (outfit.type === 'pattern' && outfit.id === 'leopard') {
+      ctx.save();
+      ctx.fillStyle = outfit.base;
+      ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill(); ctx.clip();
+      ctx.fillStyle = outfit.spot;
+      const spots = [
+        {x:-8,y:-8,r:3},{x:6,y:-10,r:4},{x:-10,y:4,r:3.5},
+        {x:8,y:6,r:3},{x:0,y:-2,r:2.5},{x:-2,y:10,r:3}
+      ];
+      spots.forEach(sp => {
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#451a03'; ctx.lineWidth = 1; ctx.stroke();
+      });
+      ctx.restore();
+    } else if (outfit.type === 'sparkle') {
+      ctx.fillStyle = outfit.base;
+      ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = outfit.shine;
+      for (let i = 0; i < 5; i++) {
+        const sx = (Math.sin(i * 2.1) * (radius - 5));
+        const sy = (Math.cos(i * 1.8) * (radius - 5));
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+    }
+  };
+
+  function loop() {
+    if (started && !s.dead && !inCloset) {
+      if(s.jetpack>0){s.jetpack--;s.vy=-14;}
+      else{s.vy+=GRAVITY;}
+      
+      if(s.boots>0)s.boots--;
+      
+      if(s.keys.left){s.vx=-MOVE_SPEED;s.facing=-1;}
+      else if(s.keys.right){s.vx=MOVE_SPEED;s.facing=1;}
+      else s.vx=0;
+      
+      s.px+=s.vx;s.py+=s.vy;
+      if(s.px+PLAYER_W<0)s.px=W; if(s.px>W)s.px=-PLAYER_W;
+      
+      if(s.vy>0&&s.jetpack<=0){
+        for(const p of s.platforms){
+          if(!p.broken&&s.px+PLAYER_W>p.x&&s.px<p.x+PLATFORM_W&&s.py+PLAYER_H>p.y&&s.py+PLAYER_H<p.y+PLATFORM_H+s.vy){
+            if(p.breakable){p.broken=true;}
+            else{s.vy=s.boots>0?JUMP_V*1.55:JUMP_V;}
+          }
+        }
+      }
+      
+      for(const p of s.platforms){
+        if(p.powerUp&&!p.powerUp.collected&&!p.breakable&&!p.broken){
+          const pu=p.powerUp,puX=p.x+PLATFORM_W/2-pu.w/2,puY=p.y-pu.h;
+          if(s.px+PLAYER_W>puX&&s.px<puX+pu.w&&s.py+PLAYER_H>puY&&s.py+PLAYER_H<puY+pu.h){
+            pu.collected=true;
+            if(pu.type==='spring')s.vy=JUMP_V*1.8;
+            else if(pu.type==='boots')s.boots=360;
+            else if(pu.type==='jetpack')s.jetpack=150;
+          }
+        }
+      }
+      
+      if(s.py<H/2){const dy=H/2-s.py;s.py=H/2;s.scrollY+=dy;
+        for(const p of s.platforms){p.y+=dy;if(p.y>H){p.y=0;
+          p.x = getReachableX(lastX);
+          lastX = p.x;
+          p.broken=false;
+          
+          const breakChance=Math.min(0.2, 0.04 + s.scrollY/12000);
+          if(Math.random()<breakChance && consecutiveBreakable < 1){
+            p.breakable=true;p.moving=false;p.powerUp=null;
+            consecutiveBreakable++;
+          }
+          else{
+            p.breakable=false;
+            consecutiveBreakable=0;
+            p.moving=Math.random()<0.15+Math.min(0.3,s.scrollY/5000);p.dir=Math.random()<0.5?-1:1;
+            if(Math.random()<0.12){
+              const r=Math.random();
+              let type,w,h;
+              if(r<0.55){type='boots';w=22;h=14;}
+              else if(r<0.92){type='spring';w=18;h=10;}
+              else{type='jetpack';w=16;h=22;}
+              p.powerUp={type,w,h,collected:false};
+            }
+            else{p.powerUp=null;}}
+        }}
+        scoreEl.textContent=Math.floor(s.scrollY);
+      }
+      
+      for(const p of s.platforms){
+        if(p.moving&&!p.broken){p.x+=p.dir*1.5;
+          if(p.x<0){p.x=0;p.dir=1;}if(p.x+PLATFORM_W>W){p.x=W-PLATFORM_W;p.dir=-1;}
+        }
+        if(p.breakable&&p.broken)p.y+=10;
+      }
+      
+      if(s.py>H){s.dead=true;gameOver=true;
+        const nb=Math.max(best,Math.floor(s.scrollY));if(nb!==best){best=nb;localStorage.setItem('sky-islands-best',String(nb));bestEl.textContent=nb;}}
+    }
+    
+    // Background rendering
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#a8d8ff');g.addColorStop(1,'#e6f4ff');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,0.6)';const co=(s.scrollY*0.2)%200;
+    for(let i=0;i<5;i++){const cy=((i*140+co)%(H+100))-50,cx=(i*97)%W;
+      ctx.beginPath();ctx.ellipse(cx,cy,40,14,0,0,Math.PI*2);ctx.ellipse(cx+30,cy-6,26,12,0,0,Math.PI*2);ctx.fill();}
+      
+    // Platforms rendering
+    for(const p of s.platforms){
+      if(p.breakable){
+        ctx.fillStyle='#94a3b8';ctx.beginPath();ctx.ellipse(p.x+PLATFORM_W/2,p.y+6,PLATFORM_W/2,8,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#64748b';ctx.beginPath();ctx.moveTo(p.x+4,p.y+8);ctx.lineTo(p.x+PLATFORM_W-4,p.y+8);
+        ctx.lineTo(p.x+PLATFORM_W/2+10,p.y+20);ctx.lineTo(p.x+PLATFORM_W/2,p.y+25);ctx.lineTo(p.x+PLATFORM_W/2-10,p.y+20);ctx.closePath();ctx.fill();
+        ctx.strokeStyle='#475569';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x+20,p.y+2);ctx.lineTo(p.x+25,p.y+10);ctx.lineTo(p.x+22,p.y+16);ctx.moveTo(p.x+50,p.y+4);ctx.lineTo(p.x+45,p.y+12);ctx.lineTo(p.x+48,p.y+18);ctx.stroke();
+      }else{
+        ctx.fillStyle=p.moving?'#38bdf8':'#5cc76f';ctx.beginPath();ctx.ellipse(p.x+PLATFORM_W/2,p.y+6,PLATFORM_W/2,8,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#8a6a4a';ctx.beginPath();ctx.moveTo(p.x+4,p.y+8);ctx.lineTo(p.x+PLATFORM_W-4,p.y+8);
+        ctx.lineTo(p.x+PLATFORM_W/2+10,p.y+22);ctx.lineTo(p.x+PLATFORM_W/2,p.y+28);ctx.lineTo(p.x+PLATFORM_W/2-10,p.y+22);ctx.closePath();ctx.fill();
+      }
+      if(p.powerUp&&!p.powerUp.collected&&!p.broken){
+        const pu=p.powerUp,puX=p.x+PLATFORM_W/2-pu.w/2,puY=p.y-pu.h;
+        if(pu.type==='spring'){
+          ctx.fillStyle='#94a3b8';ctx.fillRect(puX+2,puY+pu.h-3,pu.w-4,3);
+          ctx.strokeStyle='#64748b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(puX+4,puY+pu.h-3);ctx.lineTo(puX+pu.w-4,puY+pu.h-6);ctx.lineTo(puX+4,puY+pu.h-9);ctx.lineTo(puX+pu.w-4,puY+2);ctx.stroke();
+          ctx.fillStyle='#ef4444';ctx.fillRect(puX,puY,pu.w,3);
+        }else if(pu.type==='boots'){
+          ctx.fillStyle='#10b981';
+          ctx.fillRect(puX,puY+4,8,10);ctx.fillRect(puX,puY+10,11,4);
+          ctx.fillRect(puX+11,puY+4,8,10);ctx.fillRect(puX+11,puY+10,11,4);
+          ctx.fillStyle='#fff';
+          ctx.fillRect(puX,puY+13,11,1);ctx.fillRect(puX+11,puY+13,11,1);
+        }else if(pu.type==='jetpack'){
+          ctx.fillStyle='#f59e0b';ctx.fillRect(puX+2,puY,pu.w-4,pu.h);
+          ctx.fillStyle='#ef4444';ctx.fillRect(puX,puY+pu.h-4,3,4);ctx.fillRect(puX+pu.w-3,puY+pu.h-4,3,4);
+          ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.strokeRect(puX+3,puY+3,pu.w-6,pu.h-8);
+        }
+      }
+    }
+    
+    // Player rendering with active pattern skin
+    ctx.save();ctx.translate(s.px+PLAYER_W/2,s.py+PLAYER_H/2);
+    if(s.jetpack>0){
+      ctx.fillStyle='#f59e0b';const jX=-s.facing*(PLAYER_W/2-2);ctx.fillRect(jX-6,-8,12,20);
+      if(Math.random()<0.7){
+        ctx.fillStyle='#f97316';ctx.beginPath();ctx.arc(jX+(Math.random()*6-3),16+Math.random()*8,4+Math.random()*4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(jX+(Math.random()*4-2),14+Math.random()*4,2+Math.random()*2,0,Math.PI*2);ctx.fill();
+      }
+    }
+
+    // Draw active skin
+    drawPlayerSkin(OUTFITS[selectedOutfitIndex], PLAYER_W/2-2);
+
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.facing*6,-4,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#222';ctx.beginPath();ctx.arc(s.facing*8,-4,3,0,Math.PI*2);ctx.fill();
+    
+    if(s.boots>0){
+      ctx.fillStyle='#10b981';
+      ctx.fillRect(-12,PLAYER_H/2-6,10,8);ctx.fillRect(2,PLAYER_H/2-6,10,8);
+      ctx.fillStyle='#fff';
+      ctx.fillRect(-12,PLAYER_H/2+1,10,1);ctx.fillRect(2,PLAYER_H/2+1,10,1);
+    }else{
+      ctx.fillStyle='#3a2a1a';
+      ctx.fillRect(-10,PLAYER_H/2-6,8,6);ctx.fillRect(2,PLAYER_H/2-6,8,6);
+    }
+    ctx.restore();
+    
+    if(started&&!s.dead&&(s.jetpack>0||s.boots>0)){
+      const barW=180,barH=12,barX=W/2-barW/2,barY=H-35;
+      ctx.fillStyle='rgba(15,23,42,0.4)';
+      ctx.strokeStyle='#1e293b';
+      ctx.lineWidth=2;
+      ctx.fillRect(barX,barY,barW,barH);
+      ctx.strokeRect(barX,barY,barW,barH);
+      
+      if(s.jetpack>0){
+        const pct=s.jetpack/150;
+        ctx.fillStyle='#f59e0b';
+        ctx.fillRect(barX+1,barY+1,(barW-2)*pct,barH-2);
+      }else if(s.boots>0){
+        const pct=s.boots/360;
+        ctx.fillStyle='#10b981';
+        ctx.fillRect(barX+1,barY+1,(barW-2)*pct,barH-2);
+      }
+    }
+    
+    ctx.textAlign='center';
+    if(!started && !inCloset){
+      ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';
+      ctx.font='bold 32px system-ui,sans-serif';ctx.fillText('Sky Islands Jump',W/2,H/2-70);
+      ctx.font='16px system-ui,sans-serif';ctx.fillText('Arrow keys or A/D to move',W/2,H/2-35);
+      ctx.fillText('Wraps around the edges',W/2,H/2-15);
+      ctx.fillStyle='#ffd700';ctx.fillText('Avoid grey cracked breakable islands!',W/2,H/2+15);
+      ctx.fillText('Collect Springs, Boots & Jetpacks!',W/2,H/2+35);
+      ctx.fillStyle='#fff';ctx.font='bold 18px system-ui,sans-serif';ctx.fillText('Press Space or tap to start',W/2,H/2+75);
+    }
+
+    if(gameOver && !inCloset){
+      ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';
+      ctx.font='bold 36px system-ui,sans-serif';ctx.fillText('You fell!',W/2,H/2-30);
+      ctx.font='20px system-ui,sans-serif';ctx.fillText('Score: '+Math.floor(s.scrollY),W/2,H/2+4);
+      ctx.fillText('Best: '+best,W/2,H/2+30);
+      ctx.font='bold 18px system-ui,sans-serif';ctx.fillText('Press Space or tap to play again',W/2,H/2+68);
+    }
+
+    // Closet Screen Overlay
+    if(inCloset){
+      ctx.fillStyle='rgba(15, 23, 42, 0.88)'; ctx.fillRect(0,0,W,H);
+      
+      // Close Button
+      ctx.fillStyle='#ef4444'; ctx.fillRect(W - 60, 20, 40, 30);
+      ctx.fillStyle='#fff'; ctx.font='bold 16px system-ui,sans-serif'; ctx.fillText('✕', W - 40, 41);
+
+      ctx.font='bold 28px system-ui,sans-serif'; ctx.fillText('Outfit Closet', W/2, 60);
+      ctx.font='14px system-ui,sans-serif'; ctx.fillText('Tap an outfit to select', W/2, 90);
+
+      const cols = 2, colW = 160, rowH = 50;
+      const startX = W / 2 - colW;
+      const startY = 130;
+
+      OUTFITS.forEach((outfit, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const bx = startX + col * (colW + 10);
+        const by = startY + row * (rowH + 10);
+
+        ctx.fillStyle = i === selectedOutfitIndex ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255, 255, 255, 0.1)';
+        ctx.strokeStyle = i === selectedOutfitIndex ? '#38bdf8' : 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(bx, by, colW, rowH, 10); ctx.fill(); ctx.stroke();
+
+        ctx.save();
+        ctx.translate(bx + 25, by + 25);
+        drawPlayerSkin(outfit, 14);
+        ctx.restore();
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#fff';
+        ctx.font = '600 13px system-ui,sans-serif';
+        ctx.fillText(outfit.name, bx + 50, by + 30);
+        ctx.textAlign = 'center';
+      });
+
+      ctx.fillStyle='#cbd5e1';
+      ctx.font='14px system-ui,sans-serif';
+      ctx.fillText('Press Esc or ✕ to return', W/2, H - 40);
+    }
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NEON ZUMA</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080a18;overflow:hidden;font-family:'Space Grotesk',system-ui;cursor:crosshair}
+canvas{display:block;width:100vw;height:100vh}
+#ui{position:fixed;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;pointer-events:none;z-index:5}
+.box{background:rgba(18,18,35,.9);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px);border-radius:14px;padding:10px 16px;display:flex;gap:16px;align-items:center}
+.box b{color:#fff;font-size:20px}
+.box span{color:rgba(255,255,255,.5);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;display:block}
+.dot{width:24px;height:24px;border-radius:50%;box-shadow:0 0 12px currentColor}
+.dot.big{width:32px;height:32px;border:2px solid #fff}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at center,rgba(15,15,35,.9),rgba(5,5,15,.98));z-index:10}
+.card{background:linear-gradient(#1c1c3a,#12122a);border:1px solid rgba(130,110,255,.35);border-radius:22px;padding:34px 32px;text-align:center;max-width:400px;box-shadow:0 20px 60px #000,0 0 40px rgba(100,80,255,.25)}
+.card h1{font-size:38px;color:#fff;letter-spacing:-1px;line-height:.9}
+.card h1 em{color:#8a6cff;font-style:normal}
+.card p{color:rgba(255,255,255,.55);font-size:13.5px;line-height:1.5;margin:12px 0 20px}
+button{background:#fff;color:#0b0b18;border:0;padding:12px 26px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 0 24px rgba(255,255,255,.35)}
+button:hover{transform:translateY(-1px)}
+kbd{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-bottom-width:2px;padding:2px 6px;border-radius:5px;font-size:10px;color:#fff;margin:0 2px}
+#tip{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.35);font-size:10px;letter-spacing:1.8px;text-transform:uppercase;z-index:5}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div class="box">
+    <div><span>Score</span><b id="sc">0</b></div>
+    <div style="width:1px;height:28px;background:rgba(255,255,255,.12)"></div>
+    <div><span>Level</span><b id="lv">1</b></div>
+    <div><span>Left</span><b id="left" style="color:#8a6cff">0</b></div>
+  </div>
+  <div class="box">
+    <span>Next</span><div id="nxt" class="dot"></div><div id="cur" class="dot big"></div>
+  </div>
+</div>
+<div id="overlay">
+  <div class="card">
+    <h1>NEON <em>ZUMA</em></h1>
+    <p>Defend the Singularity. Marbles spiral toward the black hole. Aim from the center — match 3+ to pop before they are consumed.</p>
+    <button id="play">ENTER THE VOID →</button>
+    <div style="margin-top:14px"><kbd>Mouse</kbd> Aim <kbd>Click</kbd> Shoot <kbd>Space</kbd> Swap <kbd>R</kbd> Restart</div>
+  </div>
+</div>
+<div id="tip">Match 3+ same color • Chain reactions give bonus • Don't let them reach center</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W,H,CX,CY;
+function resize(){
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+  CX=W/2; CY=H/2;
+}
+resize(); addEventListener('resize',()=>{resize(); buildPath();});
+
+const COLORS=[
+  {hex:'#2af0ff', glow:'#2af0ff'},
+  {hex:'#ff3bcf', glow:'#ff3bcf'},
+  {hex:'#b8ff2e', glow:'#b8ff2e'},
+  {hex:'#ffe74c', glow:'#ffe74c'},
+  {hex:'#ff7d26', glow:'#ff7d26'},
+  {hex:'#8a5cff', glow:'#8a5cff'},
+];
+
+let PATH=[];
+function buildPath(){
+  PATH=[];
+  const steps=900;
+  const maxR=Math.min(W,H)*0.42;
+  const minR=78;
+  for(let i=0;i<=steps;i++){
+    const t=i/steps;
+    const turns=2.2;
+    const ang=t*turns*Math.PI*2 - Math.PI/2;
+    const r=maxR - (maxR-minR)*Math.pow(t,0.9);
+    PATH.push({x:CX+Math.cos(ang)*r, y:CY+Math.sin(ang)*r, t, ang, r});
+  }
+}
+buildPath();
+
+function getPos(t){
+  if(t<=0) return PATH[0];
+  if(t>=1) return PATH[PATH.length-1];
+  const idx=t*(PATH.length-1);
+  const i=Math.floor(idx);
+  const f=idx-i;
+  const a=PATH[i], b=PATH[i+1]||a;
+  return {x:a.x+(b.x-a.x)*f, y:a.y+(b.y-a.y)*f};
+}
+
+let chain=[], shots=[], parts=[];
+let curC=0, nxtC=1, score=0, level=1, state='menu';
+let speed=0.00018, angle=-Math.PI/2, last=0;
+let mx=CX, my=0;
+
+function randC(){return (Math.random()*COLORS.length)|0;}
+function newChain(){
+  chain=[];
+  const len=22+level*4;
+  for(let i=0;i<len;i++){
+    const t=-0.12 - i*0.031; // bigger gap = no overlap
+    chain.push({t, c:randC()});
+  }
+  speed=0.00016+level*0.00004; // much slower
+}
+function updateUI(){
+  document.getElementById('sc').textContent=score;
+  document.getElementById('lv').textContent=level;
+  document.getElementById('left').textContent=chain.length;
+  const nc=COLORS[nxtC], cc=COLORS[curC];
+  const n=document.getElementById('nxt'), cu=document.getElementById('cur');
+  n.style.background=`radial-gradient(at 30% 30%, #fff, ${nc.hex})`; n.style.color=nc.glow;
+  cu.style.background=`radial-gradient(at 30% 30%, #fff, ${cc.hex})`; cu.style.color=cc.glow;
+}
+function shoot(){
+  if(state!=='play') return;
+  const sp=6.5;
+  shots.push({x:CX, y:CY, vx:Math.cos(angle)*sp, vy:Math.sin(angle)*sp, c:curC, trail:[]});
+  curC=nxtC; nxtC=randC(); updateUI();
+  beep(200,0.07,0.2);
+}
+function popCheck(idx){
+  if(idx<0||idx>=chain.length) return;
+  const col=chain[idx].c;
+  let l=idx, r=idx;
+  while(l>0 && chain[l-1].c===col) l--;
+  while(r<chain.length-1 && chain[r+1].c===col) r++;
+  const cnt=r-l+1;
+  if(cnt>=3){
+    const removed=chain.splice(l,cnt);
+    score+=cnt*10 + (cnt>3?(cnt-3)*20:0);
+    removed.forEach(m=>{
+      const p=getPos(m.t);
+      for(let k=0;k<14;k++) parts.push({x:p.x,y:p.y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7,life:1,c:m.c,s:Math.random()*3+2});
+    });
+    updateUI();
+    beep(800,0.18,0.3,true);
+    // chain reaction check after small delay
+    setTimeout(()=>{
+      if(chain[l]) popCheck(l);
+      if(l>0 && chain[l-1]) popCheck(l-1);
+    },90);
+  }
+}
+function beep(f,d,v,up){
+  try{
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.frequency.value=f; o.type='sine';
+    g.gain.value=v; o.connect(g); g.connect(ac.destination); o.start();
+    if(up) o.frequency.exponentialRampToValueAtTime(f*0.5,d);
+    g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+d);
+    setTimeout(()=>ac.close(),d*1000+100);
+  }catch{}
+}
+
+function update(dt){
+  if(state!=='play') return;
+  const sd=dt*0.06;
+  // move chain with anti-overlap push
+  for(let i=0;i<chain.length;i++){
+    chain[i].t+=speed*sd;
+  }
+  chain.sort((a,b)=>a.t-b.t);
+  // enforce minimum gap to prevent overlap
+  const MIN_GAP=0.026;
+  for(let i=1;i<chain.length;i++){
+    if(chain[i].t - chain[i-1].t < MIN_GAP){
+      chain[i].t = chain[i-1].t + MIN_GAP;
+    }
+  }
+  if(chain.some(m=>m.t>=0.98)){
+    state='over';
+    document.getElementById('overlay').style.display='flex';
+    document.getElementById('overlay').innerHTML=`<div class="card"><h1>VOID <em>WINS</em></h1><p>Score ${score}. The singularity hungers again.</p><button id="play2">TRY AGAIN →</button></div>`;
+    document.getElementById('play2').onclick=restart;
+    return;
+  }
+  for(let i=shots.length-1;i>=0;i--){
+    const s=shots[i];
+    s.trail.push({x:s.x,y:s.y}); if(s.trail.length>6) s.trail.shift();
+    s.x+=s.vx*sd*0.6; s.y+=s.vy*sd*0.6;
+    let hit=-1, best=9999;
+    for(let j=0;j<chain.length;j++){
+      const p=getPos(chain[j].t);
+      const d=Math.hypot(s.x-p.x,s.y-p.y);
+      if(d<24 && d<best){best=d; hit=j;}
+    }
+    if(hit!==-1){
+      const t=chain[hit].t - 0.016;
+      chain.splice(hit,0,{t,c:s.c});
+      shots.splice(i,1);
+      popCheck(hit);
+      continue;
+    }
+    if(s.x<-80||s.x>W+80||s.y<-80||s.y>H+80) shots.splice(i,1);
+  }
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=0.022;
+    if(p.life<=0) parts.splice(i,1);
+  }
+  if(chain.length===0){
+    level++; newChain(); updateUI();
+    document.getElementById('lv').textContent=level;
+  }
+  document.getElementById('left').textContent=chain.length;
+}
+
+function draw(){
+  ctx.fillStyle='#080a18'; ctx.fillRect(0,0,W,H);
+  // stars
+  ctx.fillStyle='rgba(255,255,255,.5)';
+  for(let i=0;i<100;i++){
+    const x=(i*173)%W, y=(i*97)%H;
+    ctx.globalAlpha=0.3+Math.sin(i+Date.now()*0.001)*0.2;
+    ctx.beginPath(); ctx.arc(x,y, (i%3)*0.6+0.3,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // path - now more defined: double rail + center line
+  ctx.save();
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  // outer glow track
+  ctx.strokeStyle='rgba(120,100,255,0.12)'; ctx.lineWidth=44;
+  ctx.beginPath(); PATH.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  // main dark trench
+  ctx.strokeStyle='#16162e'; ctx.lineWidth=36;
+  ctx.beginPath(); PATH.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  // inner rails
+  ctx.strokeStyle='rgba(180,170,255,0.22)'; ctx.lineWidth=1.2; ctx.setLineDash([10,14]);
+  ctx.beginPath(); PATH.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  ctx.setLineDash([]);
+  // center dotted line
+  ctx.strokeStyle='rgba(100,90,170,0.18)'; ctx.lineWidth=1; ctx.setLineDash([2,10]);
+  ctx.beginPath(); PATH.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // black hole
+  const pulse=1+Math.sin(Date.now()*0.003)*0.05;
+  ctx.save(); ctx.translate(CX,CY); ctx.scale(pulse,pulse);
+  let g=ctx.createRadialGradient(0,0,5,0,0,90);
+  g.addColorStop(0,'#000'); g.addColorStop(0.5,'#14142e'); g.addColorStop(0.8,'rgba(120,90,255,.3)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,90,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(0,0,38,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#8a6cff'; ctx.lineWidth=2; ctx.shadowColor='#8a6cff'; ctx.shadowBlur=20; ctx.beginPath(); ctx.arc(0,0,38,0,Math.PI*2); ctx.stroke();
+  ctx.shadowBlur=0;
+  // shooter cannon
+  ctx.rotate(angle);
+  ctx.fillStyle='#222244'; ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(-6,-9,52,18,9); ctx.fill(); ctx.stroke();
+  if(state==='play'){
+    const cc=COLORS[curC];
+    ctx.save(); ctx.translate(42,0); ctx.shadowColor=cc.glow; ctx.shadowBlur=18;
+    let rg=ctx.createRadialGradient(-3,-3,2,0,0,12);
+    rg.addColorStop(0,'#fff'); rg.addColorStop(0.35,cc.hex); rg.addColorStop(1,'#000');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(0,0,12,0,Math.PI*2); ctx.fill(); ctx.restore();
+  }
+  ctx.restore();
+
+  // chain
+  chain.forEach(m=>{
+    if(m.t< -0.02) return;
+    const p=getPos(m.t); const col=COLORS[m.c];
+    ctx.save(); ctx.shadowColor=col.glow; ctx.shadowBlur=14;
+    let rg=ctx.createRadialGradient(p.x-4,p.y-4,2,p.x,p.y,14);
+    rg.addColorStop(0,'#fff'); rg.addColorStop(0.3,col.hex); rg.addColorStop(1,'#111');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(p.x,p.y,14,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0; ctx.fillStyle='rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(p.x-4,p.y-4,3.5,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+  // shots
+  shots.forEach(s=>{
+    s.trail.forEach((t,i)=>{
+      ctx.globalAlpha=i/s.trail.length*0.4;
+      ctx.fillStyle=COLORS[s.c].hex; ctx.beginPath(); ctx.arc(t.x,t.y,(i/s.trail.length)*6,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    const col=COLORS[s.c];
+    ctx.save(); ctx.shadowColor=col.glow; ctx.shadowBlur=16;
+    let rg=ctx.createRadialGradient(s.x-2,s.y-2,1,s.x,s.y,10);
+    rg.addColorStop(0,'#fff'); rg.addColorStop(0.4,col.hex); rg.addColorStop(1,'#000');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(s.x,s.y,10,0,Math.PI*2); ctx.fill(); ctx.restore();
+  });
+  // parts
+  parts.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=COLORS[p.c].hex; ctx.shadowColor=COLORS[p.c].glow; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.s*p.life,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  });
+  ctx.globalAlpha=1;
+}
+
+function loop(t){
+  const dt=Math.min(33,t-last); last=t;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+addEventListener('mousemove',e=>{mx=e.clientX; my=e.clientY; angle=Math.atan2(my-CY,mx-CX);});
+canvas.addEventListener('mousedown',e=>{if(e.button===0) shoot();});
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault(); const tmp=curC; curC=nxtC; nxtC=tmp; updateUI();}
+  if(e.key.toLowerCase()==='r') restart();
+});
+function restart(){
+  score=0; level=1; chain=[]; shots=[]; parts=[];
+  document.getElementById('overlay').style.display='none';
+  state='play'; newChain(); curC=randC(); nxtC=randC(); updateUI();
+}
+document.getElementById('play').onclick=restart;
+newChain(); curC=randC(); nxtC=randC(); updateUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Snake</title>
+    <style>
+        :root {
+            --felt-color: #0d5c2b;
+            --felt-dark: #073b1a;
+            --gold: #dfb743;
+            --wood: #5a2a18;
+            --wood-dark: #3a1a0e;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Georgia', serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        h1 {
+            color: var(--gold);
+            margin: 0 0 10px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            max-width: 900px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        /* Wood rail around the felt table */
+        .table-rail {
+            background: linear-gradient(135deg, var(--wood), var(--wood-dark));
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 2px 5px rgba(255, 255, 255, 0.2);
+            border: 3px solid var(--gold);
+        }
+
+        canvas {
+            display: block;
+            background: radial-gradient(circle, var(--felt-color) 0%, var(--felt-dark) 100%);
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .side-panel {
+            background-color: #262626;
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 20px;
+            width: 280px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .stat-box {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #444;
+            padding-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .stat-box span:last-child {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        .hand-container {
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .hand-title {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .cards-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            min-height: 55px;
+        }
+
+        /* Styled mini-cards */
+        .card {
+            width: 38px;
+            height: 55px;
+            background-color: white;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3px;
+            box-sizing: border-box;
+            color: black;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .card.red {
+            color: #d12c2c;
+        }
+
+        .card.black {
+            color: #111111;
+        }
+
+        .card .suit-center {
+            font-size: 18px;
+            align-self: center;
+            line-height: 1;
+        }
+
+        .card-placeholder {
+            width: 38px;
+            height: 55px;
+            border: 2px dashed #555;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .poker-payouts {
+            font-size: 0.8em;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .payout-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+            color: #ccc;
+        }
+
+        .payout-row.highlight {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        .controls-info {
+            text-align: center;
+            font-size: 0.85em;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        /* Overlay for screens */
+        .overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 500px;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .relative-wrapper {
+            position: relative;
+        }
+
+        .overlay h2 {
+            color: var(--gold);
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(to bottom, #f3d060, #bfa030);
+            border: none;
+            color: #000;
+            padding: 10px 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Mobile controls */
+        .mobile-controls {
+            display: none;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(3, 60px);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .ctrl-btn {
+            background-color: #333;
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            color: var(--gold);
+            font-size: 1.5em;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .ctrl-btn:active {
+            background-color: var(--gold);
+            color: #000;
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .mobile-controls {
+                display: grid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>♣♦ POKER SNAKE ♥♠</h1>
+
+    <div class="game-container">
+        <!-- Play Area -->
+        <div class="table-rail">
+            <div class="relative-wrapper">
+                <canvas id="gameCanvas" width="500" height="500"></canvas>
+                
+                <!-- Start / Game Over Screen Overlay -->
+                <div id="screenOverlay" class="overlay">
+                    <h2 id="overlayTitle">POKER SNAKE</h2>
+                    <p style="text-align:center; padding: 0 40px; margin-bottom: 20px; color: #ddd;" id="overlayText">
+                        Collect cards to build the best 5-card poker hand! Higher poker hands yield major bonus points and increase your snake speed. Avoid crashing into walls or yourself.
+                    </p>
+                    <button class="btn" id="startBtn" onclick="startGame()">DEAL CARDS</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar stats and Poker elements -->
+        <div class="side-panel">
+            <div class="stat-box">
+                <span>Score:</span>
+                <span id="scoreVal">0</span>
+            </div>
+            <div class="stat-box">
+                <span>High Score:</span>
+                <span id="highScoreVal">0</span>
+            </div>
+            <div class="stat-box">
+                <span>Last Hand:</span>
+                <span id="lastHandVal" style="font-size: 0.9em; color:#fff;">None</span>
+            </div>
+
+            <!-- Current Hand Display -->
+            <div class="hand-container">
+                <div class="hand-title">Current Hand</div>
+                <div class="cards-row" id="handCards">
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                </div>
+            </div>
+
+            <!-- Payouts reference -->
+            <div class="poker-payouts">
+                <div style="font-weight: bold; text-align: center; margin-bottom: 5px; color: var(--gold);">Hand Bonuses</div>
+                <div class="payout-row"><span>Royal Flush</span><span>+1000</span></div>
+                <div class="payout-row"><span>Straight Flush</span><span>+800</span></div>
+                <div class="payout-row"><span>Four of a Kind</span><span>+600</span></div>
+                <div class="payout-row"><span>Full House</span><span>+500</span></div>
+                <div class="payout-row"><span>Flush</span><span>+400</span></div>
+                <div class="payout-row"><span>Straight</span><span>+300</span></div>
+                <div class="payout-row"><span>Three of a Kind</span><span>+200</span></div>
+                <div class="payout-row"><span>Two Pair</span><span>+100</span></div>
+                <div class="payout-row"><span>One Pair</span><span>+50</span></div>
+                <div class="payout-row"><span>High Card</span><span>+10</span></div>
+            </div>
+
+            <div class="controls-info">
+                Use <b>Arrow Keys</b> or <b>WASD</b> to steer.<br>
+                Eat cards to grow your snake and construct poker hands.
+            </div>
+        </div>
+    </div>
+
+    <!-- On-screen controls for mobile/tablet -->
+    <div class="mobile-controls">
+        <div></div>
+        <div class="ctrl-btn" onclick="handleDirection('UP')">▲</div>
+        <div></div>
+        <div class="ctrl-btn" onclick="handleDirection('LEFT')">◀</div>
+        <div></div>
+        <div class="ctrl-btn" onclick="handleDirection('RIGHT')">▶</div>
+        <div></div>
+        <div class="ctrl-btn" onclick="handleDirection('DOWN')">▼</div>
+        <div></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const screenOverlay = document.getElementById('screenOverlay');
+        const overlayTitle = document.getElementById('overlayTitle');
+        const overlayText = document.getElementById('overlayText');
+        const startBtn = document.getElementById('startBtn');
+        
+        const scoreVal = document.getElementById('scoreVal');
+        const highScoreVal = document.getElementById('highScoreVal');
+        const lastHandVal = document.getElementById('lastHandVal');
+        const handCardsContainer = document.getElementById('handCards');
+
+        // Audio synthesizer configuration (Self-contained SFX)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(freq, type, duration, vol = 0.1) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function triggerEatSound() {
+            playSound(523.25, 'triangle', 0.08); // C5 chip click
+            setTimeout(() => playSound(659.25, 'triangle', 0.08), 50); // E5 chip click
+        }
+
+        function triggerHandSound(tier) {
+            // Success fanfares
+            const notes = [261.63, 329.63, 392.00, 523.25]; // C chord arpeggio
+            notes.forEach((note, index) => {
+                setTimeout(() => {
+                    playSound(note * (1 + (tier * 0.1)), 'sine', 0.3, 0.15);
+                }, index * 80);
+            });
+        }
+
+        function triggerGameOverSound() {
+            playSound(220, 'sawtooth', 0.5, 0.1);
+            setTimeout(() => playSound(147, 'sawtooth', 0.6, 0.1), 150);
+        }
+
+        // Game mechanics configuration
+        const gridCount = 20;
+        const cellSize = canvas.width / gridCount; // 25px per cell
+        
+        let snake = [];
+        let direction = 'RIGHT';
+        let nextDirection = 'RIGHT';
+        let score = 0;
+        let highScore = 0;
+        let gameLoopId = null;
+        let baseSpeed = 140; // milliseconds
+        let currentSpeed = baseSpeed;
+        
+        let activeCard = null; // Card currently spawned on table
+        let currentHand = [];  // Cards eaten so far (max 5)
+        let deck = [];
+
+        // Suits & Card templates
+        const SUITS = [
+            { name: 'Hearts', symbol: '♥', color: 'red', code: 'H' },
+            { name: 'Diamonds', symbol: '♦', color: 'red', code: 'D' },
+            { name: 'Clubs', symbol: '♣', color: 'black', code: 'C' },
+            { name: 'Spades', symbol: '♠', color: 'black', code: 'S' }
+        ];
+        const VALUES = [
+            { name: '2', val: 2 }, { name: '3', val: 3 }, { name: '4', val: 4 }, 
+            { name: '5', val: 5 }, { name: '6', val: 6 }, { name: '7', val: 7 }, 
+            { name: '8', val: 8 }, { name: '9', val: 9 }, { name: '10', val: 10 }, 
+            { name: 'J', val: 11 }, { name: 'Q', val: 12 }, { name: 'K', val: 13 }, { name: 'A', val: 14 }
+        ];
+
+        function createDeck() {
+            let newDeck = [];
+            for (let suit of SUITS) {
+                for (let valObj of VALUES) {
+                    newDeck.push({
+                        suitSymbol: suit.symbol,
+                        suitColor: suit.color,
+                        suitCode: suit.code,
+                        label: valObj.name,
+                        value: valObj.val
+                    });
+                }
+            }
+            shuffle(newDeck);
+            return newDeck;
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        // Start / Reset function
+        function startGame() {
+            initAudio();
+            screenOverlay.style.display = 'none';
+            
+            // Reset state
+            snake = [
+                { x: 10, y: 10 },
+                { x: 9, y: 10 },
+                { x: 8, y: 10 }
+            ];
+            direction = 'RIGHT';
+            nextDirection = 'RIGHT';
+            score = 0;
+            currentSpeed = baseSpeed;
+            scoreVal.textContent = score;
+            currentHand = [];
+            updateHandUI();
+            
+            deck = createDeck();
+            spawnCard();
+            
+            if (gameLoopId) clearTimeout(gameLoopId);
+            runGameLoop();
+        }
+
+        function spawnCard() {
+            if (deck.length === 0) {
+                deck = createDeck();
+            }
+            const candidateCard = deck.pop();
+            
+            // Find empty grid slot
+            let validPos = false;
+            let cardX, cardY;
+            
+            while (!validPos) {
+                cardX = Math.floor(Math.random() * gridCount);
+                cardY = Math.floor(Math.random() * gridCount);
+                
+                // Ensure card doesn't spawn directly on snake
+                validPos = !snake.some(segment => segment.x === cardX && segment.y === cardY);
+            }
+
+            activeCard = {
+                x: cardX,
+                y: cardY,
+                ...candidateCard
+            };
+        }
+
+        // Main game cycle
+        function runGameLoop() {
+            gameLoopId = setTimeout(() => {
+                updateState();
+                drawGame();
+                if (gameLoopId) runGameLoop();
+            }, currentSpeed);
+        }
+
+        function updateState() {
+            direction = nextDirection;
+            
+            // Calculate next head position
+            const head = { ...snake[0] };
+            if (direction === 'UP') head.y -= 1;
+            else if (direction === 'DOWN') head.y += 1;
+            else if (direction === 'LEFT') head.x -= 1;
+            else if (direction === 'RIGHT') head.x += 1;
+
+            // Collision check: Walls
+            if (head.x < 0 || head.x >= gridCount || head.y < 0 || head.y >= gridCount) {
+                gameOver();
+                return;
+            }
+
+            // Collision check: Self
+            if (snake.some((segment, idx) => idx !== 0 && segment.x === head.x && segment.y === head.y)) {
+                gameOver();
+                return;
+            }
+
+            // Insert new head
+            snake.unshift(head);
+
+            // Eating card check
+            if (head.x === activeCard.x && head.y === activeCard.y) {
+                triggerEatSound();
+                score += 10;
+                scoreVal.textContent = score;
+
+                // Add card to player hand
+                currentHand.push({ ...activeCard });
+                updateHandUI();
+
+                // If 5 cards are gathered, evaluate Poker hand
+                if (currentHand.length === 5) {
+                    evaluateCurrentHand();
+                }
+
+                spawnCard();
+            } else {
+                // Regular movement, remove tail
+                snake.pop();
+            }
+        }
+
+        function drawGame() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid accent lines subtly
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= gridCount; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, canvas.height);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(canvas.width, i * cellSize);
+                ctx.stroke();
+            }
+
+            // Draw Card Food on canvas
+            if (activeCard) {
+                drawCanvasCard(activeCard);
+            }
+
+            // Draw Snake
+            snake.forEach((segment, index) => {
+                const isHead = index === 0;
+                const x = segment.x * cellSize;
+                const y = segment.y * cellSize;
+
+                if (isHead) {
+                    // Head: Style like a "Dealer Button"
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(x + cellSize/2, y + cellSize/2, cellSize/2 - 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = '#d4af37';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Text "D" inside dealer button
+                    ctx.fillStyle = '#000000';
+                    ctx.font = 'bold 12px serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('D', x + cellSize/2, y + cellSize/2);
+                } else {
+                    // Body: Alternating Red/Blue striped Casino Chips
+                    const isEven = index % 2 === 0;
+                    const mainColor = isEven ? '#cc1111' : '#1144cc';
+                    
+                    // Chip Base
+                    ctx.fillStyle = mainColor;
+                    ctx.beginPath();
+                    ctx.arc(x + cellSize/2, y + cellSize/2, cellSize/2 - 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Stripes/Notches
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([3, 4]);
+                    ctx.beginPath();
+                    ctx.arc(x + cellSize/2, y + cellSize/2, cellSize/2 - 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]); // Reset dash
+
+                    // Inner circle
+                    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                    ctx.beginPath();
+                    ctx.arc(x + cellSize/2, y + cellSize/2, cellSize/4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        // Draw card onto the HTML5 Canvas
+        function drawCanvasCard(card) {
+            const pad = 3;
+            const cardW = cellSize - pad * 2;
+            const cardH = cellSize + 4; // Make it look vertical
+            const cx = card.x * cellSize + pad;
+            const cy = card.y * cellSize - 2;
+
+            // Drop Shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+
+            // Card Body (rounded rectangle)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(cx, cy, cardW, cardH, 4);
+            ctx.fill();
+
+            // Reset Shadow so it doesn't affect drawing text
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Card Border
+            ctx.strokeStyle = '#aaaaaa';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Render details
+            ctx.fillStyle = card.suitColor === 'red' ? '#cc1111' : '#111111';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            
+            // Value Top-Left
+            ctx.fillText(card.label, cx + 3, cy + 2);
+
+            // Suit Center
+            ctx.font = '15px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(card.suitSymbol, cx + cardW/2, cy + cardH/2 + 2);
+        }
+
+        // Render card assets in side panel HTML
+        function updateHandUI() {
+            handCardsContainer.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                if (i < currentHand.length) {
+                    const card = currentHand[i];
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = `card ${card.suitColor}`;
+                    cardDiv.innerHTML = `
+                        <div style="text-align: left; line-height: 1;">${card.label}</div>
+                        <div class="suit-center">${card.suitSymbol}</div>
+                        <div style="text-align: right; line-height: 1; transform: rotate(180deg);">${card.label}</div>
+                    `;
+                    handCardsContainer.appendChild(cardDiv);
+                } else {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'card-placeholder';
+                    handCardsContainer.appendChild(placeholder);
+                }
+            }
+        }
+
+        // Core Poker Rule logic
+        function evaluateCurrentHand() {
+            // Map values and suits
+            const sortedCards = [...currentHand].sort((a, b) => a.value - b.value);
+            const suits = sortedCards.map(c => c.suitCode);
+            const values = sortedCards.map(c => c.value);
+
+            const isFlush = suits.every(s => s === suits[0]);
+            
+            // Straight evaluation (including wheel A-2-3-4-5)
+            let isStraight = false;
+            const uniqueVals = Array.from(new Set(values));
+            if (uniqueVals.length === 5) {
+                if (values[4] - values[0] === 4) {
+                    isStraight = true;
+                } else if (values[4] === 14 && values[0] === 2 && values[1] === 3 && values[2] === 4 && values[3] === 5) {
+                    isStraight = true; // Ace acting as low straight
+                }
+            }
+
+            // Value distribution maps (Pairs, Trips, Quads)
+            const counts = {};
+            values.forEach(v => counts[v] = (counts[v] || 0) + 1);
+            const countArr = Object.values(counts).sort((a, b) => b - a);
+
+            let handName = "High Card";
+            let bonus = 10;
+            let tier = 0;
+
+            if (isFlush && isStraight) {
+                // Check Royal Flush
+                if (values[4] === 14 && values[0] === 10) {
+                    handName = "Royal Flush 👑";
+                    bonus = 1000;
+                    tier = 9;
+                } else {
+                    handName = "Straight Flush 🎯";
+                    bonus = 800;
+                    tier = 8;
+                }
+            } else if (countArr[0] === 4) {
+                handName = "Four of a Kind 💥";
+                bonus = 600;
+                tier = 7;
+            } else if (countArr[0] === 3 && countArr[1] === 2) {
+                handName = "Full House 🏠";
+                bonus = 500;
+                tier = 6;
+            } else if (isFlush) {
+                handName = "Flush 🌊";
+                bonus = 400;
+                tier = 5;
+            } else if (isStraight) {
+                handName = "Straight 🛣️";
+                bonus = 300;
+                tier = 4;
+            } else if (countArr[0] === 3) {
+                handName = "Three of a Kind ⚡";
+                bonus = 200;
+                tier = 3;
+            } else if (countArr[0] === 2 && countArr[1] === 2) {
+                handName = "Two Pair 👥";
+                bonus = 100;
+                tier = 2;
+            } else if (countArr[0] === 2) {
+                handName = "One Pair 🍒";
+                bonus = 50;
+                tier = 1;
+            }
+
+            // UI feedback & points
+            score += bonus;
+            scoreVal.textContent = score;
+            lastHandVal.textContent = `${handName} (+${bonus} pts)`;
+            
+            // Speed progression
+            currentSpeed = Math.max(65, baseSpeed - Math.floor(score / 15));
+
+            triggerHandSound(tier);
+
+            // Hand presentation effect: Clear hand list after 1.5 seconds
+            setTimeout(() => {
+                currentHand = [];
+                updateHandUI();
+            }, 1200);
+        }
+
+        function gameOver() {
+            clearTimeout(gameLoopId);
+            gameLoopId = null;
+            triggerGameOverSound();
+
+            if (score > highScore) {
+                highScore = score;
+                highScoreVal.textContent = highScore;
+            }
+
+            overlayTitle.textContent = "GAME OVER";
+            overlayText.innerHTML = `You crashed! <br><br> Your final score was <b style="color:var(--gold); font-size:1.2em;">${score}</b>.`;
+            startBtn.textContent = "PLAY AGAIN";
+            screenOverlay.style.display = 'flex';
+        }
+
+        // Input Listeners
+        window.addEventListener('keydown', e => {
+            const key = e.key.toUpperCase();
+            if (['ARROWUP', 'W'].includes(key) && direction !== 'DOWN') nextDirection = 'UP';
+            else if (['ARROWDOWN', 'S'].includes(key) && direction !== 'UP') nextDirection = 'DOWN';
+            else if (['ARROWLEFT', 'A'].includes(key) && direction !== 'RIGHT') nextDirection = 'LEFT';
+            else if (['ARROWRIGHT', 'D'].includes(key) && direction !== 'LEFT') nextDirection = 'RIGHT';
+
+            // Prevent window scrolling on arrow keys
+            if (['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        function handleDirection(dir) {
+            if (dir === 'UP' && direction !== 'DOWN') nextDirection = 'UP';
+            if (dir === 'DOWN' && direction !== 'UP') nextDirection = 'DOWN';
+            if (dir === 'LEFT' && direction !== 'RIGHT') nextDirection = 'LEFT';
+            if (dir === 'RIGHT' && direction !== 'LEFT') nextDirection = 'RIGHT';
+        }
+    </script>
+</body>
+</html>

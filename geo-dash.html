@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Neon Dash</title>
+    <style>
+        :root {
+            --neon-pink: #ff007f;
+            --neon-blue: #00f3ff;
+            --neon-purple: #9d00ff;
+            --neon-yellow: #ffea00;
+            --neon-green: #00ff66;
+            --bg-dark: #0a0012;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.3), 0 0 20px rgba(255, 0, 127, 0.4);
+            border: 3px solid var(--neon-blue);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            width: 800px;
+            height: 450px;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 8px var(--neon-blue);
+            pointer-events: none;
+        }
+
+        .hud-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .exit-btn {
+            background: rgba(255, 0, 127, 0.2);
+            border: 1px solid var(--neon-pink);
+            color: #fff;
+            padding: 6px 14px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            pointer-events: auto !important;
+            box-shadow: 0 0 8px rgba(255, 0, 127, 0.4);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 50;
+        }
+
+        .exit-btn:hover {
+            background: var(--neon-pink);
+            color: #fff;
+            box-shadow: 0 0 15px var(--neon-pink);
+            transform: scale(1.05);
+        }
+
+        .menu-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 0, 18, 0.9);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            pointer-events: auto !important;
+            transition: opacity 0.3s ease;
+            z-index: 20;
+        }
+
+        .hidden {
+            display: none !important;
+            pointer-events: none !important;
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink), 0 0 40px var(--neon-purple);
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--neon-pink), var(--neon-purple));
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.5);
+            transition: all 0.2s ease;
+            pointer-events: auto !important;
+            position: relative;
+            z-index: 50;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.8);
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff0055, #990000);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.4);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #ff0000, #ff0055);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
+        }
+
+        .level-select {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 85%;
+            pointer-events: auto;
+        }
+
+        .level-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+            font-weight: bold;
+            pointer-events: auto !important;
+            position: relative;
+            z-index: 50;
+        }
+
+        .level-btn:hover, .level-btn.active {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .editor-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--neon-purple);
+            pointer-events: auto !important;
+            align-items: center;
+            z-index: 30;
+        }
+
+        .tool-btn {
+            background: #222;
+            border: 1px solid #555;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            pointer-events: auto !important;
+        }
+
+        .tool-btn.active {
+            border-color: var(--neon-yellow);
+            box-shadow: 0 0 8px var(--neon-yellow);
+            background: #444;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            background: #111;
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-purple);
+            border-radius: 5px;
+            padding: 8px;
+            font-family: monospace;
+            pointer-events: auto !important;
+        }
+
+        textarea {
+            height: 80px;
+            resize: none;
+        }
+
+        input[type="text"] {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .map-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 85%;
+            max-height: 240px;
+            overflow-y: auto;
+            margin: 10px 0;
+            padding-right: 5px;
+            pointer-events: auto;
+        }
+
+        .map-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--neon-purple);
+            padding: 12px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+        .map-card:hover {
+            border-color: var(--neon-blue);
+            background: rgba(0, 243, 255, 0.1);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+            pointer-events: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #aaa;
+            padding: 5px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            pointer-events: auto !important;
+        }
+
+        .tab-btn.active {
+            color: var(--neon-blue);
+            border-bottom-color: var(--neon-blue);
+            text-shadow: 0 0 8px var(--neon-blue);
+        }
+
+        .map-actions {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="canvas" width="800" height="450"></canvas>
+
+        <div class="ui-overlay">
+            <div id="hud" class="hud hidden">
+                <span id="score-display">PROGRESS: 0%</span>
+                <div class="hud-right">
+                    <span id="attempt-display">ATTEMPT: 1</span>
+                    <button class="exit-btn" id="btn-exit">Exit</button>
+                </div>
+            </div>
+
+            <!-- Editor UI Palette -->
+            <div id="editor-tools" class="editor-controls hidden">
+                <button class="tool-btn active" data-type="block" title="Block">█</button>
+                <button class="tool-btn" data-type="spike" title="Spike">▲</button>
+                <button class="tool-btn" data-type="pad" title="Jump Pad">—</button>
+                <button class="tool-btn" data-type="portal" title="End Portal" style="color: var(--neon-green);">O</button>
+                <button class="tool-btn" data-type="eraser" title="Eraser">✕</button>
+                <button class="btn" style="padding: 5px 15px; font-size: 14px;" id="btn-save-map">Save Level</button>
+                <button class="btn" style="padding: 5px 15px; font-size: 14px;" id="btn-save-code">Export/Import</button>
+                <button class="btn" style="padding: 5px 15px; font-size: 14px;" id="btn-play-custom">Test</button>
+                <button class="exit-btn" id="btn-editor-exit">Exit</button>
+            </div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="menu-screen">
+            <h1>NEON DASH</h1>
+            <div class="level-select" id="level-select-container">
+                <button class="level-btn active" data-level="0">Lvl 1: Genesis</button>
+                <button class="level-btn" data-level="1">Lvl 2: Stacks</button>
+                <button class="level-btn" data-level="2">Lvl 3: Precision</button>
+                <button class="level-btn" data-level="3">Lvl 4: Sky High</button>
+                <button class="level-btn" data-level="4">Lvl 5: Overdrive</button>
+            </div>
+            <button class="btn" id="btn-start">Play Level</button>
+            <button class="btn" id="btn-creator-maps">Custom Maps</button>
+            <button class="btn" id="btn-editor">Level Creator</button>
+        </div>
+
+        <!-- Victory Modal -->
+        <div id="victory-modal" class="menu-screen hidden">
+            <h1 style="color: var(--neon-green); text-shadow: 0 0 20px var(--neon-green);">LEVEL COMPLETE!</h1>
+            <p id="victory-stats" style="font-size: 18px; margin-bottom: 10px;">Total Attempts: 1</p>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn" id="btn-next-level">Next Level</button>
+                <button class="btn" id="btn-victory-menu">Main Menu</button>
+            </div>
+        </div>
+
+        <!-- Custom Maps Modal -->
+        <div id="creator-modal" class="menu-screen hidden">
+            <h2 style="color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue);">LEVEL MANAGER</h2>
+            <div class="tabs">
+                <button class="tab-btn active" id="tab-my-maps">My Created Maps</button>
+                <button class="tab-btn" id="tab-preset-maps">Community Maps</button>
+            </div>
+            <div class="map-grid" id="creator-maps-list">
+                <!-- Dynamically populated -->
+            </div>
+            <button class="btn" id="btn-close-creator">Back to Menu</button>
+        </div>
+
+        <!-- Share/Code Modal -->
+        <div id="share-modal" class="menu-screen hidden">
+            <h2 style="color: var(--neon-blue);">Export / Import Level</h2>
+            <div style="width: 80%; display: flex; flex-direction: column; align-items: flex-start;">
+                <label style="font-size: 12px; color: #aaa; margin-bottom: 4px;">Level Name:</label>
+                <input type="text" id="level-name-input" placeholder="My Epic Level" value="My Level">
+                
+                <label style="font-size: 12px; color: #aaa; margin-bottom: 4px;">Level Data Code:</label>
+                <textarea id="level-code-io" placeholder="Paste level JSON code here..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn" id="btn-load-code">Import Level Code</button>
+                <button class="btn" id="btn-close-modal">Back to Editor</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Game State Management
+    const STATE = { MENU: 0, PLAYING: 1, GAMEOVER: 2, EDITOR: 3, VICTORY: 4 };
+    let currentState = STATE.MENU;
+
+    // System Constants
+    const GRAVITY = 0.18;
+    const JUMP_FORCE = -5.3;
+    const SPEED = 1.8;
+    const GRID_SIZE = 30;
+    const FLOOR_Y = 360;
+
+    // Player Properties
+    let player = {
+        x: 100,
+        y: FLOOR_Y - GRID_SIZE,
+        vy: 0,
+        rotation: 0,
+        isGrounded: false,
+        size: GRID_SIZE
+    };
+
+    let particles = [];
+    function createParticles(x, y, color, count = 8, speedMult = 1) {
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 3 * speedMult,
+                vy: (Math.random() - 0.5) * 3 * speedMult,
+                size: Math.random() * 4 + 2,
+                color,
+                life: 1.0
+            });
+        }
+    }
+
+    // Built-in Levels
+    const builtInLevels = [
+        [
+            {type: 'spike', x: 500, y: FLOOR_Y - 30},
+            {type: 'spike', x: 700, y: FLOOR_Y - 30},
+            {type: 'block', x: 900, y: FLOOR_Y - 30},
+            {type: 'block', x: 1100, y: FLOOR_Y - 30},
+            {type: 'block', x: 1130, y: FLOOR_Y - 30},
+            {type: 'spike', x: 1350, y: FLOOR_Y - 30},
+            {type: 'pad', x: 1550, y: FLOOR_Y - 10},
+            {type: 'block', x: 1720, y: FLOOR_Y - 90},
+            {type: 'block', x: 1750, y: FLOOR_Y - 90},
+            {type: 'portal', x: 2000, y: FLOOR_Y - 80}
+        ],
+        [
+            {type: 'spike', x: 450, y: FLOOR_Y - 30},
+            {type: 'block', x: 650, y: FLOOR_Y - 30},
+            {type: 'block', x: 680, y: FLOOR_Y - 60},
+            {type: 'pad', x: 920, y: FLOOR_Y - 10},
+            {type: 'block', x: 1080, y: FLOOR_Y - 120},
+            {type: 'portal', x: 1400, y: FLOOR_Y - 80}
+        ],
+        [
+            {type: 'spike', x: 450, y: FLOOR_Y - 30},
+            {type: 'pad', x: 650, y: FLOOR_Y - 10},
+            {type: 'block', x: 820, y: FLOOR_Y - 120},
+            {type: 'portal', x: 1200, y: FLOOR_Y - 80}
+        ],
+        [
+            {type: 'pad', x: 450, y: FLOOR_Y - 10},
+            {type: 'block', x: 620, y: FLOOR_Y - 120},
+            {type: 'pad', x: 800, y: FLOOR_Y - 120},
+            {type: 'portal', x: 1200, y: FLOOR_Y - 80}
+        ],
+        [
+            {type: 'spike', x: 400, y: FLOOR_Y - 30},
+            {type: 'pad', x: 580, y: FLOOR_Y - 10},
+            {type: 'block', x: 740, y: FLOOR_Y - 90},
+            {type: 'portal', x: 1100, y: FLOOR_Y - 80}
+        ]
+    ];
+
+    const creatorLevels = [
+        {
+            name: "Neon Rush",
+            author: "CyberPulse",
+            data: [
+                {type: 'spike', x: 450, y: FLOOR_Y - 30},
+                {type: 'pad', x: 620, y: FLOOR_Y - 10},
+                {type: 'portal', x: 1000, y: FLOOR_Y - 80}
+            ]
+        },
+        {
+            name: "The Leap",
+            author: "RetroKing",
+            data: [
+                {type: 'block', x: 450, y: FLOOR_Y - 30},
+                {type: 'pad', x: 720, y: FLOOR_Y - 10},
+                {type: 'portal', x: 1100, y: FLOOR_Y - 80}
+            ]
+        }
+    ];
+
+    let myCustomMaps = JSON.parse(localStorage.getItem('neon_dash_my_maps')) || [];
+
+    function saveMyMapsToStorage() {
+        localStorage.setItem('neon_dash_my_maps', JSON.stringify(myCustomMaps));
+    }
+
+    function addMapToCreatorBoard(name, dataObjects) {
+        let finalName = name && name.trim() !== "" ? name.trim() : "Custom Level";
+        let newMap = {
+            name: finalName,
+            data: JSON.parse(JSON.stringify(dataObjects)),
+            date: new Date().toLocaleDateString()
+        };
+        myCustomMaps.push(newMap);
+        saveMyMapsToStorage();
+    }
+
+    let activeMapTab = 'my';
+    let selectedLevelIdx = 0;
+    let currentObjects = [];
+    let cameraX = 0;
+    let attempts = 1;
+    let currentTool = 'block';
+    let portalAnimAngle = 0;
+    let isCustomLevel = false;
+
+    // Control Inputs
+    let keys = {};
+    window.addEventListener('keydown', e => {
+        if (e.code === 'Space' || e.code === 'ArrowUp') keys['jump'] = true;
+        if (e.code === 'Escape' && currentState === STATE.PLAYING) exitToMenu();
+    });
+    window.addEventListener('keyup', e => {
+        if (e.code === 'Space' || e.code === 'ArrowUp') keys['jump'] = false;
+    });
+
+    // Jump on Canvas Click ONLY when playing
+    canvas.addEventListener('mousedown', (e) => {
+        if (currentState === STATE.PLAYING) {
+            keys['jump'] = true;
+        }
+    });
+    window.addEventListener('mouseup', () => keys['jump'] = false);
+
+    // Editor Dragging
+    let isDraggingEditor = false;
+    let lastMouseX = 0;
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (currentState !== STATE.EDITOR) return;
+        if (e.button === 1 || e.shiftKey) {
+            isDraggingEditor = true;
+            lastMouseX = e.clientX;
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (currentState === STATE.EDITOR && isDraggingEditor) {
+            let dx = e.clientX - lastMouseX;
+            cameraX = Math.max(0, cameraX - dx);
+            lastMouseX = e.clientX;
+        }
+    });
+
+    window.addEventListener('mouseup', () => isDraggingEditor = false);
+
+    canvas.addEventListener('click', (e) => {
+        if (currentState !== STATE.EDITOR || isDraggingEditor) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left + cameraX;
+        const clickY = e.clientY - rect.top;
+
+        const snapX = Math.floor(clickX / GRID_SIZE) * GRID_SIZE;
+        const snapY = Math.floor(clickY / GRID_SIZE) * GRID_SIZE;
+
+        currentObjects = currentObjects.filter(obj => !(obj.x === snapX && obj.y === snapY));
+
+        if (currentTool !== 'eraser') {
+            currentObjects.push({ type: currentTool, x: snapX, y: snapY });
+        }
+    });
+
+    function selectLevel(idx) {
+        selectedLevelIdx = idx;
+        document.querySelectorAll('.level-btn').forEach((btn, i) => {
+            btn.classList.toggle('active', i === idx);
+        });
+    }
+
+    function resetPlayer() {
+        player.x = 100;
+        player.y = FLOOR_Y - GRID_SIZE;
+        player.vy = 0;
+        player.rotation = 0;
+        player.isGrounded = true;
+        cameraX = 0;
+    }
+
+    function startLevel(objects, isCustom = false) {
+        isCustomLevel = isCustom;
+        currentObjects = JSON.parse(JSON.stringify(objects));
+        resetPlayer();
+        attempts = 1;
+        document.getElementById('attempt-display').innerText = `ATTEMPT: ${attempts}`;
+        currentState = STATE.PLAYING;
+        
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('creator-modal').classList.add('hidden');
+        document.getElementById('victory-modal').classList.add('hidden');
+        document.getElementById('editor-tools').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+    }
+
+    function openEditorWithMap(objects = []) {
+        currentState = STATE.EDITOR;
+        currentObjects = JSON.parse(JSON.stringify(objects));
+        resetPlayer();
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('creator-modal').classList.add('hidden');
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('editor-tools').classList.remove('hidden');
+    }
+
+    function exitToMenu() {
+        currentState = STATE.MENU;
+        resetPlayer();
+        document.getElementById('main-menu').classList.remove('hidden');
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('editor-tools').classList.add('hidden');
+        document.getElementById('creator-modal').classList.add('hidden');
+        document.getElementById('victory-modal').classList.add('hidden');
+    }
+
+    function completeLevel() {
+        currentState = STATE.VICTORY;
+        document.getElementById('hud').classList.add('hidden');
+        document.getElementById('victory-modal').classList.remove('hidden');
+        document.getElementById('victory-stats').innerText = `Total Attempts: ${attempts}`;
+
+        const nextBtn = document.getElementById('btn-next-level');
+        if (!isCustomLevel && selectedLevelIdx < builtInLevels.length - 1) {
+            nextBtn.classList.remove('hidden');
+        } else {
+            nextBtn.classList.add('hidden');
+        }
+
+        createParticles(player.x - cameraX + 15, player.y + 15, '#00ff66', 40, 3);
+    }
+
+    function drawBackground() {
+        let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#0d001a');
+        gradient.addColorStop(0.6, '#2a0036');
+        gradient.addColorStop(1, '#510048');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let sunGradient = ctx.createLinearGradient(0, 80, 0, 220);
+        sunGradient.addColorStop(0, '#ffea00');
+        sunGradient.addColorStop(1, '#ff007f');
+        ctx.fillStyle = sunGradient;
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, 150, 60, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#00f3ff';
+        ctx.lineWidth = 1;
+        let gridOffset = (cameraX * 0.5) % GRID_SIZE;
+        for (let x = -gridOffset; x < canvas.width; x += GRID_SIZE) {
+            ctx.beginPath();
+            ctx.moveTo(x, FLOOR_Y);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, FLOOR_Y);
+        ctx.lineTo(canvas.width, FLOOR_Y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#05000a';
+        ctx.fillRect(0, FLOOR_Y, canvas.width, canvas.height - FLOOR_Y);
+    }
+
+    function drawObjects() {
+        portalAnimAngle += 0.05;
+
+        currentObjects.forEach(obj => {
+            let drawX = obj.x - cameraX;
+            if (drawX < -GRID_SIZE * 2 || drawX > canvas.width + GRID_SIZE * 2) return;
+
+            if (obj.type === 'block') {
+                ctx.fillStyle = '#111';
+                ctx.strokeStyle = '#9d00ff';
+                ctx.lineWidth = 2;
+                ctx.fillRect(drawX, obj.y, GRID_SIZE, GRID_SIZE);
+                ctx.strokeRect(drawX, obj.y, GRID_SIZE, GRID_SIZE);
+            } else if (obj.type === 'spike') {
+                ctx.fillStyle = '#ff007f';
+                ctx.beginPath();
+                ctx.moveTo(drawX, obj.y + GRID_SIZE);
+                ctx.lineTo(drawX + GRID_SIZE / 2, obj.y);
+                ctx.lineTo(drawX + GRID_SIZE, obj.y + GRID_SIZE);
+                ctx.closePath();
+                ctx.fill();
+            } else if (obj.type === 'pad') {
+                ctx.fillStyle = '#ffea00';
+                ctx.fillRect(drawX, obj.y + 20, GRID_SIZE, 10);
+            } else if (obj.type === 'portal') {
+                let pWidth = 20;
+                let pHeight = 70;
+                let pX = drawX + 5;
+                let pY = obj.y;
+
+                ctx.strokeStyle = '#00ff66';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.ellipse(pX + pWidth/2, pY + pHeight/2, pWidth/2, pHeight/2, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(pX + pWidth/2, pY + pHeight/2);
+                ctx.rotate(portalAnimAngle);
+                ctx.strokeStyle = '#00f3ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, pWidth/3, pHeight/3, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        });
+    }
+
+    function drawPlayer() {
+        ctx.save();
+        let renderX = player.x - cameraX + player.size / 2;
+        let renderY = player.y + player.size / 2;
+
+        ctx.translate(renderX, renderY);
+        ctx.rotate((player.rotation * Math.PI) / 180);
+
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-player.size / 4, -player.size / 4, player.size / 2, player.size / 2);
+        ctx.restore();
+    }
+
+    function updatePhysics() {
+        if (currentState !== STATE.PLAYING) return;
+
+        player.x += SPEED;
+        cameraX = player.x - 100;
+
+        player.vy += GRAVITY;
+        player.y += player.vy;
+
+        if (player.y >= FLOOR_Y - player.size) {
+            player.y = FLOOR_Y - player.size;
+            player.vy = 0;
+            player.isGrounded = true;
+        } else {
+            player.isGrounded = false;
+        }
+
+        if (!player.isGrounded) {
+            player.rotation += 3.0; 
+        } else {
+            player.rotation = Math.round(player.rotation / 90) * 90;
+        }
+
+        if (keys['jump'] && player.isGrounded) {
+            player.vy = JUMP_FORCE;
+            player.isGrounded = false;
+            createParticles(player.x + 15, player.y + 30, '#00f3ff');
+        }
+
+        let portalFound = false;
+        let portalX = 2000;
+
+        for (let obj of currentObjects) {
+            if (obj.type === 'portal') {
+                portalFound = true;
+                portalX = obj.x;
+
+                if (
+                    player.x < obj.x + 20 &&
+                    player.x + player.size > obj.x &&
+                    player.y < obj.y + 70 &&
+                    player.y + player.size > obj.y
+                ) {
+                    completeLevel();
+                    return;
+                }
+            }
+
+            if (Math.abs(obj.x - player.x) > GRID_SIZE * 2) continue;
+
+            if (obj.type === 'spike') {
+                if (
+                    player.x + 6 < obj.x + GRID_SIZE - 6 &&
+                    player.x + player.size - 6 > obj.x + 6 &&
+                    player.y + 6 < obj.y + GRID_SIZE &&
+                    player.y + player.size > obj.y + 12
+                ) {
+                    die();
+                }
+            } else if (obj.type === 'block') {
+                if (
+                    player.x < obj.x + GRID_SIZE &&
+                    player.x + player.size > obj.x &&
+                    player.y < obj.y + GRID_SIZE &&
+                    player.y + player.size > obj.y
+                ) {
+                    if (player.vy >= 0 && player.y + player.size - player.vy <= obj.y + 12) {
+                        player.y = obj.y - player.size;
+                        player.vy = 0;
+                        player.isGrounded = true;
+                    } else {
+                        die();
+                    }
+                }
+            } else if (obj.type === 'pad') {
+                if (
+                    player.x < obj.x + GRID_SIZE &&
+                    player.x + player.size > obj.x &&
+                    player.y + player.size >= obj.y + 10 &&
+                    player.y < obj.y + GRID_SIZE
+                ) {
+                    player.vy = JUMP_FORCE * 1.3;
+                    createParticles(player.x + 15, player.y + 15, '#ffea00', 12);
+                }
+            }
+        }
+
+        let maxTargetX = portalFound ? portalX : Math.max(...currentObjects.map(o => o.x), 2000);
+        let progress = Math.min(100, Math.floor((player.x / maxTargetX) * 100));
+        document.getElementById('score-display').innerText = `PROGRESS: ${progress}%`;
+
+        if (!portalFound && player.x > maxTargetX + 100) {
+            completeLevel();
+        }
+    }
+
+    function die() {
+        createParticles(player.x + 15, player.y + 15, '#ff007f', 25);
+        attempts++;
+        document.getElementById('attempt-display').innerText = `ATTEMPT: ${attempts}`;
+        resetPlayer();
+    }
+
+    function updateParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.02;
+
+            if (p.life <= 0) {
+                particles.splice(i, 1);
+            } else {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x - cameraX, p.y, p.size, p.size);
+                ctx.globalAlpha = 1.0;
+            }
+        }
+    }
+
+    function switchMapTab(tab) {
+        activeMapTab = tab;
+        document.getElementById('tab-my-maps').classList.toggle('active', tab === 'my');
+        document.getElementById('tab-preset-maps').classList.toggle('active', tab === 'presets');
+        renderCreatorMaps();
+    }
+
+    function renderCreatorMaps() {
+        const container = document.getElementById('creator-maps-list');
+        container.innerHTML = '';
+
+        if (activeMapTab === 'my') {
+            if (myCustomMaps.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: #888; margin-top: 40px;">No maps created yet! Build or Import one in the Level Creator.</div>`;
+                return;
+            }
+
+            myCustomMaps.forEach((map, index) => {
+                const card = document.createElement('div');
+                card.className = 'map-card';
+                card.innerHTML = `
+                    <div>
+                        <strong style="color: var(--neon-yellow); font-size: 16px;">${map.name}</strong>
+                        <div style="font-size: 11px; color: #aaa;">Objects: ${map.data.length} | Created: ${map.date || 'Recently'}</div>
+                    </div>
+                    <div class="map-actions">
+                        <button class="btn btn-play-map" style="padding: 5px 12px; font-size: 12px;">Play</button>
+                        <button class="btn btn-edit-map" style="padding: 5px 12px; font-size: 12px; background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));">Edit</button>
+                        <button class="btn btn-danger btn-del-map" style="padding: 5px 10px; font-size: 12px;">✕</button>
+                    </div>
+                `;
+
+                card.querySelector('.btn-play-map').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    startLevel(myCustomMaps[index].data, true);
+                });
+
+                card.querySelector('.btn-edit-map').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openEditorWithMap(myCustomMaps[index].data);
+                });
+
+                card.querySelector('.btn-del-map').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteMyMap(index);
+                });
+
+                container.appendChild(card);
+            });
+        } else {
+            creatorLevels.forEach((level, index) => {
+                const card = document.createElement('div');
+                card.className = 'map-card';
+                card.innerHTML = `
+                    <div>
+                        <strong style="color: var(--neon-yellow); font-size: 16px;">${level.name}</strong>
+                        <div style="font-size: 11px; color: #aaa;">By ${level.author}</div>
+                    </div>
+                    <div class="map-actions">
+                        <button class="btn btn-play-preset" style="padding: 5px 15px; font-size: 12px;">Play</button>
+                    </div>
+                `;
+
+                card.querySelector('.btn-play-preset').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    startLevel(creatorLevels[index].data, true);
+                });
+
+                container.appendChild(card);
+            });
+        }
+    }
+
+    function deleteMyMap(index) {
+        if (confirm(`Delete level "${myCustomMaps[index].name}"?`)) {
+            myCustomMaps.splice(index, 1);
+            saveMyMapsToStorage();
+            renderCreatorMaps();
+        }
+    }
+
+    function saveCurrentMap() {
+        if (currentObjects.length === 0) return alert("Cannot save an empty level!");
+        
+        let name = prompt("Enter a name for your level:", "My Custom Level");
+        if (!name || name.trim() === "") return;
+
+        addMapToCreatorBoard(name, currentObjects);
+        alert(`Map "${name.trim()}" saved and added to Creator Maps!`);
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawBackground();
+        drawObjects();
+
+        if (currentState === STATE.PLAYING) {
+            updatePhysics();
+            drawPlayer();
+        } else if (currentState === STATE.EDITOR) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.strokeRect(100 - cameraX, 0, 1, canvas.height);
+        }
+
+        updateParticles();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- EVENT LISTENERS BINDING ---
+    document.getElementById('level-select-container').addEventListener('click', (e) => {
+        const target = e.target.closest('.level-btn');
+        if (target) {
+            e.stopPropagation();
+            const idx = parseInt(target.getAttribute('data-level'), 10);
+            selectLevel(idx);
+        }
+    });
+
+    document.getElementById('btn-start').addEventListener('click', (e) => {
+        e.stopPropagation();
+        startLevel(builtInLevels[selectedLevelIdx], false);
+    });
+
+    document.getElementById('btn-next-level').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selectedLevelIdx < builtInLevels.length - 1) {
+            selectedLevelIdx++;
+            selectLevel(selectedLevelIdx);
+            startLevel(builtInLevels[selectedLevelIdx], false);
+        }
+    });
+
+    document.getElementById('btn-victory-menu').addEventListener('click', (e) => {
+        e.stopPropagation();
+        exitToMenu();
+    });
+
+    document.getElementById('btn-creator-maps').addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchMapTab('my');
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('creator-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-creator').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('creator-modal').classList.add('hidden');
+        document.getElementById('main-menu').classList.remove('hidden');
+    });
+
+    document.getElementById('tab-my-maps').addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchMapTab('my');
+    });
+
+    document.getElementById('tab-preset-maps').addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchMapTab('presets');
+    });
+
+    document.getElementById('btn-editor').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditorWithMap([]);
+    });
+
+    document.getElementById('btn-save-map').addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveCurrentMap();
+    });
+
+    document.getElementById('btn-exit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        exitToMenu();
+    });
+
+    document.getElementById('btn-editor-exit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        exitToMenu();
+    });
+
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTool = btn.getAttribute('data-type');
+        });
+    });
+
+    document.getElementById('btn-play-custom').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentObjects.length === 0) return alert("Build something first!");
+        startLevel(currentObjects, true);
+    });
+
+    document.getElementById('btn-save-code').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('level-code-io').value = JSON.stringify(currentObjects);
+        document.getElementById('level-name-input').value = "Imported Level";
+        document.getElementById('share-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-modal').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('share-modal').classList.add('hidden');
+    });
+
+    document.getElementById('btn-load-code').addEventListener('click', (e) => {
+        e.stopPropagation();
+        try {
+            let codeStr = document.getElementById('level-code-io').value.trim();
+            let mapName = document.getElementById('level-name-input').value.trim();
+
+            if (!codeStr) return alert("Please paste level JSON code into the box!");
+
+            let loadedData = JSON.parse(codeStr);
+
+            if (Array.isArray(loadedData)) {
+                currentObjects = loadedData;
+
+                addMapToCreatorBoard(mapName || "Imported Level", loadedData);
+
+                document.getElementById('share-modal').classList.add('hidden');
+
+                startLevel(loadedData, true);
+            } else {
+                alert("Invalid Level Code format!");
+            }
+        } catch (err) {
+            alert("Invalid JSON Code! Make sure you pasted full level code.");
+        }
+    });
+
+    gameLoop();
+});
+</script>
+</body>
+</html>

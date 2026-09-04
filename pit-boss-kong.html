@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Pit Boss: 30 Stages of Target Terror</title>
+    <style>
+        :root {
+            --felt-green: radial-gradient(circle, #115e34 0%, #07381c 100%);
+            --wood-trim: #4a2711;
+            --gold: #d4af37;
+            --hud-bg: rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #110d0a;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            margin: 5px 0 15px 0;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .game-wrapper {
+            display: flex;
+            gap: 20px;
+            background: #1e1510;
+            border: 12px solid var(--wood-trim);
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.9);
+            padding: 15px;
+            position: relative;
+            align-items: flex-start;
+        }
+
+        .board-container {
+            position: relative;
+        }
+
+        canvas {
+            background: var(--felt-green);
+            display: block;
+            border: 4px solid #000;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+            border-radius: 6px;
+        }
+
+        .sidebar {
+            width: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .hud-box {
+            background: var(--hud-bg);
+            border: 1.5px dashed rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .hud-title {
+            font-size: 0.75rem;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        .lives-display {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 5px;
+            font-size: 1.2rem;
+            color: var(--gold);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 8, 6, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            text-align: center;
+            border-radius: 4px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #a06e12 0%, #614002 100%);
+            border: 1px solid var(--gold);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            margin-top: 15px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #c78d20 0%, #7e5302 100%);
+        }
+
+        #jackpot-toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(10, 10, 10, 0.98);
+            border: 3px solid var(--gold);
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            z-index: 20;
+            box-shadow: 0 0 35px rgba(212, 175, 55, 0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            min-width: 250px;
+        }
+
+        #jackpot-toast.active {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .jackpot-headline {
+            font-size: 1.8rem;
+            color: #20bf6b;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(32, 191, 107, 0.5);
+        }
+
+        /* Stage selection grid styling */
+        .stage-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            max-width: 420px;
+            margin: 15px auto;
+        }
+
+        .stage-btn {
+            background: #222;
+            border: 2px solid #555;
+            color: #fff;
+            padding: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+
+        .stage-btn:hover {
+            transform: scale(1.1);
+            border-color: #fff;
+        }
+
+        .stage-btn.easy { border-color: #20bf6b; background: rgba(32, 191, 107, 0.1); }
+        .stage-btn.medium { border-color: #2d98da; background: rgba(45, 152, 218, 0.1); }
+        .stage-btn.hard { border-color: #eb3b5a; background: rgba(235, 59, 90, 0.1); }
+
+        .mute-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            text-decoration: underline;
+            font-family: inherit;
+            font-size: 0.8rem;
+            margin-top: auto;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TEXAS PIT BOSS</h1>
+        <p class="subtitle">Procedural platforms. Dodge aimed chips and beat all 30 tables!</p>
+    </header>
+
+    <div class="game-wrapper">
+
+        <!-- Left Sidebar Statistics -->
+        <div class="sidebar">
+            <div class="hud-box">
+                <div class="hud-title">CHIP STACK</div>
+                <div id="stack-value" class="hud-value">$1,000</div>
+            </div>
+
+            <div class="hud-box">
+                <div class="hud-title">STAGE</div>
+                <div id="level-value" class="hud-value">1/30</div>
+            </div>
+
+            <div class="hud-box">
+                <div class="hud-title">TABLE TIER</div>
+                <div id="tier-value" class="hud-value" style="font-size: 1rem; color: #20bf6b;">EASY SEAT</div>
+            </div>
+
+            <div class="hud-box">
+                <div class="hud-title">LIVES</div>
+                <div id="lives-value" class="lives-display">🤠🤠🤠</div>
+            </div>
+
+            <button class="btn" id="stage-select-btn" style="font-size: 0.8rem; padding: 10px 15px;">Select Stage</button>
+        </div>
+
+        <!-- Canvas Core Area -->
+        <div class="board-container">
+            <!-- Start Game Menu overlay -->
+            <div id="menu-overlay" class="overlay">
+                <h2 style="color: var(--gold); margin: 0 0 10px 0;">BUY IN & RUN</h2>
+                <p style="max-width: 420px; font-size: 0.85rem; line-height: 1.5; color: #ccc;">
+                    Every level has a unique layout. In higher stages, Pit Boss Pete will aim golden targeted chips directly at you! Jump, duck, and run to the jackpot safe.
+                </p>
+                <div style="font-size: 0.8rem; color: var(--gold); margin-top: 5px;">
+                    Stages 1-10: Easy Seat (Basic rolling chips)<br>
+                    Stages 11-20: Mid Stakes (Card-dispensing side cannons active!)<br>
+                    Stages 21-30: High Roller (Raining casino dice + rapid firing cannons!)
+                </div>
+                <button class="btn" id="start-btn" style="width: auto;">Buy In ($1,000)</button>
+            </div>
+
+            <!-- Game Over overlay -->
+            <div id="gameover-overlay" class="overlay" style="display: none;">
+                <h2 style="color: #eb3b5a; margin: 0 0 10px 0;">BUSTED!</h2>
+                <p>The Casino Boss cleaned out your entire stack.</p>
+                <button class="btn" id="rebuy-btn" style="width: auto;">Re-Buy ($1,000)</button>
+            </div>
+
+            <!-- Victory Screen Overlay -->
+            <div id="victory-overlay" class="overlay" style="display: none;">
+                <h2 style="color: var(--gold); margin: 0 0 10px 0;">BANK BROKEN!</h2>
+                <p style="max-width: 420px; font-size: 0.9rem; line-height: 1.5;">
+                    You conquered all 30 unique stages, broke the vault, and outpaced the Pit Boss's tracking systems! You are the ultimate High Roller!
+                </p>
+                <button class="btn" id="victory-btn" style="width: auto;">Play Again</button>
+            </div>
+
+            <!-- Stage Selection Overlay -->
+            <div id="select-overlay" class="overlay" style="display: none; z-index: 15;">
+                <h2 style="color: var(--gold); margin: 0 0 5px 0;">SELECT TABLE</h2>
+                <p style="font-size: 0.8rem; margin: 0 0 10px 0; color: #ccc;">Select any of the 30 high-stakes tables to play immediately:</p>
+                <div id="stage-grid" class="stage-grid"></div>
+                <button class="btn" id="close-select-btn" style="background: #444; border-color: #666; margin-top: 10px; width: auto; padding: 8px 20px;">Close</button>
+            </div>
+
+            <!-- Win Toast overlay -->
+            <div id="jackpot-toast">
+                <div class="jackpot-headline" id="toast-title">🎰 JACKPOT! 🎰</div>
+                <div style="font-size: 1.1rem; color: #fff; margin: 10px 0;" id="toast-sub">Stage Cleared!</div>
+                <div id="toast-payout" style="font-size: 1.3rem; color: var(--gold); font-weight: bold;">+$2,500 CHIPS</div>
+            </div>
+
+            <canvas id="stage" width="600" height="600"></canvas>
+        </div>
+
+        <div style="display: flex; flex-direction: column; height: 350px;">
+            <button class="mute-btn" id="mute-btn">Mute SFX</button>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('stage');
+        const ctx = canvas.getContext('2d');
+
+        // --- GAME STATES & VARIABLES ---
+        let score = 1000;
+        let level = 1;
+        let lives = 3;
+        let gameStarted = false;
+        let isPaused = false;
+        let gameOver = false;
+        let isMuted = false;
+        let lastTime = 0;
+
+        let keys = {};
+        let chips = [];
+        let cannonCards = [];
+        let fallingDice = [];
+        let particles = [];
+        
+        let chipSpawnTimer = 0;
+        let cannonTimer = 0;
+        let diceTimer = 0;
+
+        // Active layout data (procedural per level)
+        let activePlatforms = [];
+        let activeLadders = [];
+
+        // Player variables
+        const PLAYER_WIDTH = 20;
+        const PLAYER_HEIGHT = 30;
+        let player = {
+            x: 50,
+            y: 530,
+            vx: 0,
+            vy: 0,
+            isGrounded: false,
+            isJumping: false,
+            isClimbing: false,
+            isMoving: false
+        };
+
+        // Pit Boss variables
+        let boss = {
+            x: 100,
+            y: 180,
+            direction: 1,
+            speed: 0.5,
+            width: 24,
+            height: 25
+        };
+
+        const jackpotPos = { x: 300, y: 100 };
+
+        // --- SEED-BASED DETERMINISTIC PSEUDO-RANDOM GENERATOR ---
+        function seededRandom(seed) {
+            let x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // --- PROCEDURAL GENERATION ENGINE ---
+        function generateStageLayout(lvl) {
+            let stagePlatforms = [];
+            let stageLadders = [];
+
+            // 1. Bottom Floor (flat)
+            stagePlatforms.push({ id: 1, x1: 0, x2: 600, y1: 560, y2: 560 });
+
+            let currentY = 560;
+
+            // 2. Generate 4 intermediate sloped platforms
+            for (let i = 1; i <= 4; i++) {
+                let h = 85 + seededRandom(lvl * 15 + i) * 18; 
+                let nextY = currentY - h;
+
+                let slopeDir = (i % 2 === 1) ? 1 : -1;
+                let yLeft, yRight;
+                let slopeVal = 12 + seededRandom(lvl * 25 + i) * 18; 
+
+                if (slopeDir === 1) {
+                    yLeft = nextY + slopeVal;
+                    yRight = nextY - slopeVal;
+                } else {
+                    yLeft = nextY - slopeVal;
+                    yRight = nextY + slopeVal;
+                }
+
+                let x1 = 40 + Math.floor(seededRandom(lvl * 35 + i) * 35);
+                let x2 = 560 - Math.floor(seededRandom(lvl * 45 + i) * 35);
+
+                stagePlatforms.push({ id: i + 1, x1, x2, y1: yLeft, y2: yRight });
+
+                let overlapX1 = Math.max(stagePlatforms[i-1].x1, x1) + 25;
+                let overlapX2 = Math.min(stagePlatforms[i-1].x2, x2) - 25;
+                let ladderX = overlapX1 + Math.floor(seededRandom(lvl * 55 + i) * (overlapX2 - overlapX1));
+
+                let yLower = getPlatformY(stagePlatforms[i-1], ladderX);
+                let yUpper = getPlatformY(stagePlatforms[i], ladderX);
+
+                stageLadders.push({
+                    x: ladderX,
+                    y1: yUpper,
+                    y2: yLower
+                });
+
+                currentY = nextY;
+            }
+
+            // 3. Top flat platform for jackpot
+            let topY = currentY - (85 + seededRandom(lvl * 65) * 15);
+            stagePlatforms.push({ id: 6, x1: 180, x2: 420, y1: topY, y2: topY });
+
+            let p5 = stagePlatforms[4];
+            let p6 = stagePlatforms[5];
+            let overlapX1 = Math.max(p5.x1, p6.x1) + 25;
+            let overlapX2 = Math.min(p5.x2, p6.x2) - 25;
+            let topLadderX = overlapX1 + Math.floor(seededRandom(lvl * 75) * (overlapX2 - overlapX1));
+
+            stageLadders.push({
+                x: topLadderX,
+                y1: topY,
+                y2: getPlatformY(p5, topLadderX)
+            });
+
+            return { stagePlatforms, stageLadders };
+        }
+
+        // --- LEVEL DIFFICULTY STAKES PARAMETERS ---
+        function getDifficultyTier(lvl) {
+            if (lvl <= 10) return { name: "EASY SEAT", color: "#20bf6b" };
+            if (lvl <= 20) return { name: "MID STAKES", color: "#2d98da" };
+            return { name: "HIGH ROLLER", color: "#eb3b5a" };
+        }
+
+        function getLevelParams(lvl) {
+            let chipSpeed = 1.9 + (lvl - 1) * 0.08;
+            let bossSpeed = 0.5 + (lvl - 1) * 0.07;
+            let spawnDelay = Math.max(1050, 3100 - (lvl - 1) * 75);
+            let payout = 500 + (lvl - 1) * 350;
+            return { chipSpeed, bossSpeed, spawnDelay, payout };
+        }
+
+        // --- RETRO AUDIO SYSTEM ---
+        let audioCtx = null;
+
+        function initAudio() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            } catch (e) {
+                console.warn("Audio Context blocked: ", e);
+            }
+        }
+
+        function playSynth(type) {
+            if (isMuted || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(650, now + 0.16);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+                    osc.start(now);
+                    osc.stop(now + 0.16);
+                } else if (type === 'deal') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.exponentialRampToValueAtTime(250, now + 0.12);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(40, now + 0.45);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                    osc.start(now);
+                    osc.stop(now + 0.45);
+                } else if (type === 'jackpot') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+                    notes.forEach((freq, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        g.gain.setValueAtTime(0.08, now + idx * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.3);
+                        o.start(now + idx * 0.08);
+                        o.stop(now + idx * 0.08 + 0.3);
+                    });
+                }
+            } catch (e) {
+                console.warn("Sound failed to play: ", e);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? "Unmute SFX" : "Mute SFX";
+        }
+
+        // --- SLOPE-SNAP HELPERS ---
+        function getPlatformY(p, x) {
+            if (x < p.x1 || x > p.x2) return null;
+            let ratio = (x - p.x1) / (p.x2 - p.x1);
+            return p.y1 + ratio * (p.y2 - p.y1);
+        }
+
+        function getPlatformUnder(x) {
+            let matching = [];
+            for (let p of activePlatforms) {
+                if (x >= p.x1 && x <= p.x2) {
+                    matching.push({ platform: p, y: getPlatformY(p, x) });
+                }
+            }
+            return matching;
+        }
+
+        function getPlatformAt(x, y) {
+            for (let p of activePlatforms) {
+                if (x >= p.x1 && x <= p.x2) {
+                    let py = getPlatformY(p, x);
+                    if (py !== null && Math.abs(y - py) <= 10) {
+                        return { platform: p, y: py };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function getNearLadder(x, y) {
+            for (let l of activeLadders) {
+                if (Math.abs(x - l.x) < 14 && y >= l.y1 - 5 && y <= l.y2 + 5) {
+                    return l;
+                }
+            }
+            return null;
+        }
+
+        // --- PARTICLE SYSTEM ---
+        class Spark {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6 - 3;
+                this.radius = 2 + Math.random() * 2;
+                this.alpha = 1;
+                this.color = color || '#ffd700';
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.15; 
+                this.alpha -= 0.035;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- GAME HAZARD (CHIPS AND AIMBOT TARGETS) ---
+        class Chip {
+            constructor(x, y, isAimed = false) {
+                this.x = x;
+                this.y = y;
+                this.isAimed = isAimed;
+                this.radius = 8;
+                this.rotation = 0;
+                this.toRemove = false;
+
+                let params = getLevelParams(level);
+
+                if (isAimed) {
+                    this.color = '#ffd700'; 
+                    let dx = player.x - x;
+                    let dy = (player.y + PLAYER_HEIGHT / 2) - y;
+                    let dist = Math.hypot(dx, dy) || 1;
+                    
+                    let airSpeed = params.chipSpeed * 1.25;
+                    this.vx = (dx / dist) * airSpeed;
+                    this.vy = (dy / dist) * airSpeed - 1.2; 
+                    this.isFalling = true;
+                } else {
+                    this.color = ['#eb3b5a', '#2d98da', '#20bf6b'][Math.floor(Math.random() * 3)];
+                    this.vx = params.chipSpeed;
+                    this.vy = 0;
+                    this.isFalling = true;
+                }
+            }
+
+            shatter() {
+                this.toRemove = true;
+                for (let i = 0; i < 8; i++) {
+                    particles.push(new Spark(this.x, this.y, this.color));
+                }
+            }
+
+            update() {
+                this.rotation += 0.07;
+
+                if (this.isAimed) {
+                    this.vy += 0.1; 
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    if (this.vy > 0) {
+                        let platData = getPlatformAt(this.x, this.y);
+                        if (platData) {
+                            this.shatter();
+                        }
+                    }
+                } else {
+                    if (this.isFalling) {
+                        this.vy += 0.3;
+                        this.y += this.vy;
+                        this.x += this.vx * 0.5;
+
+                        let platData = getPlatformAt(this.x, this.y);
+                        if (platData && this.vy >= 0) {
+                            this.y = platData.y - this.radius;
+                            this.vy = 0;
+                            this.isFalling = false;
+                            this.vx = (platData.platform.y1 > platData.platform.y2) ? Math.abs(this.vx) : -Math.abs(this.vx);
+                        }
+                    } else {
+                        this.x += this.vx;
+                        let platData = getPlatformAt(this.x, this.y + this.radius);
+                        if (platData) {
+                            this.y = platData.y - this.radius;
+                        } else {
+                            this.isFalling = true;
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                if (this.isAimed) {
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#ffd700';
+                }
+
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 3]);
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius - 1, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(0, 0, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // --- NEW CANNON PROJECTILE CLASS (CARD) ---
+        class CannonCard {
+            constructor(y, direction) {
+                this.x = direction === 1 ? -10 : 610;
+                this.y = y;
+                this.vx = direction * (2.8 + level * 0.08);
+                this.width = 24;
+                this.height = 16;
+                this.suit = ['♠', '♥', '♦', '♣'][Math.floor(Math.random() * 4)];
+                this.color = '#ffffff';
+            }
+            update() {
+                this.x += this.vx;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Card Border glow
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+                ctx.strokeStyle = '#1e272e';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+
+                ctx.fillStyle = (this.suit === '♥' || this.suit === '♦') ? '#eb3b5a' : '#1e272e';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.suit, 0, 0);
+                
+                ctx.restore();
+            }
+        }
+
+        // --- NEW FALLING HAZARD CLASS (DICE RAIN) ---
+        class FallingDice {
+            constructor() {
+                this.x = 20 + Math.random() * 560;
+                this.y = -20;
+                this.vy = 2.5 + Math.random() * 1.5 + (level * 0.08);
+                this.size = 14;
+                this.rotation = Math.random() * Math.PI;
+                this.rotSpeed = (Math.random() - 0.5) * 0.1;
+                this.toRemove = false;
+            }
+            update() {
+                this.y += this.vy;
+                this.rotation += this.rotSpeed;
+
+                // Check for ground platform collision
+                let platData = getPlatformAt(this.x, this.y);
+                if (platData) {
+                    this.shatter();
+                }
+            }
+            shatter() {
+                this.toRemove = true;
+                // Red dice shards
+                for (let i = 0; i < 6; i++) {
+                    particles.push(new Spark(this.x, this.y, '#eb3b5a'));
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                ctx.fillStyle = '#eb3b5a';
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(-this.size / 2, -this.size / 2, this.size, this.size);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(0, 0, 1.8, 0, Math.PI * 2); 
+                ctx.arc(-3.5, -3.5, 1.4, 0, Math.PI * 2);
+                ctx.arc(3.5, 3.5, 1.4, 0, Math.PI * 2);
+                ctx.arc(3.5, -3.5, 1.4, 0, Math.PI * 2);
+                ctx.arc(-3.5, 3.5, 1.4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // --- PLATFORM ENGINE CORE LOOP ---
+        function updateGame(deltaTime) {
+            if (!gameStarted || isPaused || gameOver) return;
+
+            let params = getLevelParams(level);
+
+            // --- 1. Boss Pacing ---
+            boss.speed = params.bossSpeed;
+            boss.x += boss.direction * boss.speed;
+
+            let p5 = activePlatforms[4];
+            if (boss.x < p5.x1 + 20) {
+                boss.x = p5.x1 + 20;
+                boss.direction = 1;
+            } else if (boss.x > p5.x2 - 120) { 
+                boss.x = p5.x2 - 120;
+                boss.direction = -1;
+            }
+
+            let bossPlat = getPlatformAt(boss.x, 210);
+            if (bossPlat) {
+                boss.y = bossPlat.y - boss.height - 10;
+            }
+
+            // --- 2. Chip Target Spawning ---
+            chipSpawnTimer += deltaTime;
+            if (chipSpawnTimer > params.spawnDelay) {
+                let aimedChance = 0;
+                if (level > 5 && level <= 10) aimedChance = 0.20;
+                else if (level <= 20) aimedChance = 0.40;
+                else if (level <= 30) aimedChance = 0.65;
+
+                let throwAimed = (Math.random() < aimedChance);
+                chips.push(new Chip(boss.x, boss.y + 15, throwAimed));
+
+                playSynth('deal');
+                chipSpawnTimer = 0;
+            }
+
+            // --- 3. Cannon Card Shooters (Stages 11–30) ---
+            if (level > 10) {
+                cannonTimer += deltaTime;
+                let cannonDelay = Math.max(700, 3100 - (level - 10) * 110);
+                if (cannonTimer > cannonDelay) {
+                    let shooterHeights = [220, 310, 430];
+                    let chosenY = shooterHeights[Math.floor(Math.random() * shooterHeights.length)];
+                    let firingDir = Math.random() < 0.5 ? 1 : -1;
+                    
+                    cannonCards.push(new CannonCard(chosenY, firingDir));
+                    playSynth('deal');
+                    cannonTimer = 0;
+                }
+            }
+
+            // --- 4. Raining Dice Rain (Stages 21–30) ---
+            if (level > 20) {
+                diceTimer += deltaTime;
+                let diceDelay = Math.max(300, 1800 - (level - 20) * 140);
+                if (diceTimer > diceDelay) {
+                    fallingDice.push(new FallingDice());
+                    diceTimer = 0;
+                }
+            }
+
+            // --- 5. Hazard Projectiles Updates ---
+            chips.forEach(c => c.update());
+            chips.forEach(c => {
+                if (c.isAimed && (c.y > 590 || c.x < -20 || c.x > 620)) {
+                    c.toRemove = true;
+                }
+            });
+            chips = chips.filter(c => !c.toRemove && c.y < 595 && c.x > -20 && c.x < 620);
+
+            // Update Side Shooters
+            cannonCards.forEach(cc => cc.update());
+            cannonCards = cannonCards.filter(cc => cc.x > -30 && cc.x < 630);
+
+            // Update falling hazards
+            fallingDice.forEach(fd => fd.update());
+            fallingDice.forEach(fd => {
+                if (fd.y > 590) {
+                    fd.toRemove = true;
+                }
+            });
+            fallingDice = fallingDice.filter(fd => !fd.toRemove);
+
+            // Particle sparks
+            particles.forEach(p => p.update());
+            particles = particles.filter(p => p.alpha > 0);
+
+            // Collision check
+            let px = player.x;
+            let py = player.y + PLAYER_HEIGHT / 2;
+            
+            // Chips
+            for (let c of chips) {
+                let dist = Math.hypot(px - c.x, py - c.y);
+                if (dist < 18) {
+                    handleDamage();
+                    return;
+                }
+            }
+
+            // Side shooter cards
+            for (let cc of cannonCards) {
+                let dist = Math.hypot(px - cc.x, py - cc.y);
+                if (dist < 17) {
+                    handleDamage();
+                    return;
+                }
+            }
+
+            // Raining dice
+            for (let fd of fallingDice) {
+                let dist = Math.hypot(px - fd.x, py - fd.y);
+                if (dist < 17) {
+                    handleDamage();
+                    return;
+                }
+            }
+
+            // --- 6. Ranger Jack Physics ---
+            player.isMoving = false;
+
+            if (player.isClimbing) {
+                player.vx = 0;
+                player.vy = 0;
+
+                let ladder = getNearLadder(player.x, player.y + PLAYER_HEIGHT - 5);
+                if (ladder) {
+                    if (keys['ArrowUp'] || keys['w'] || keys['W']) {
+                        player.y -= 2.2;
+                        player.isMoving = true;
+                    } else if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+                        player.y += 2.2;
+                        player.isMoving = true;
+                    }
+
+                    if (player.y + PLAYER_HEIGHT < ladder.y1) {
+                        player.isClimbing = false;
+                        let plat = getPlatformAt(player.x, ladder.y1);
+                        if (plat) {
+                            player.y = plat.y - PLAYER_HEIGHT - 4; 
+                            player.isGrounded = true;
+                        }
+                    } else if (player.y + PLAYER_HEIGHT > ladder.y2 + 5) {
+                        player.isClimbing = false;
+                        let plat = getPlatformAt(player.x, ladder.y2);
+                        if (plat) {
+                            player.y = plat.y - PLAYER_HEIGHT - 4; 
+                            player.isGrounded = true;
+                        }
+                    }
+                } else {
+                    player.isClimbing = false;
+                }
+            } else {
+                if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+                    player.vx = -3;
+                    player.isMoving = true;
+                } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+                    player.vx = 3;
+                    player.isMoving = true;
+                } else {
+                    player.vx = 0;
+                }
+
+                if (keys['ArrowUp'] || keys['w'] || keys['W'] || keys['ArrowDown'] || keys['s'] || keys['S']) {
+                    let ladder = getNearLadder(player.x, player.y + PLAYER_HEIGHT - 5);
+                    if (ladder) {
+                        player.isClimbing = true;
+                        player.x = ladder.x; 
+                        player.vx = 0;
+                    }
+                }
+
+                if (!player.isGrounded) {
+                    player.vy += 0.35;
+                } else {
+                    player.vy = 0;
+                    if (keys[' '] && !player.isJumping) {
+                        player.vy = -6.5;
+                        player.isGrounded = false;
+                        player.isJumping = true;
+                        playSynth('jump');
+                    }
+                }
+
+                player.x += player.vx;
+                player.y += player.vy;
+
+                if (player.x < 10) player.x = 10;
+                if (player.x > 590) player.x = 590;
+
+                let platformsUnder = getPlatformUnder(player.x);
+                let groundedThisFrame = false;
+
+                if (player.vy >= 0) {
+                    for (let pu of platformsUnder) {
+                        let feetY = player.y + PLAYER_HEIGHT;
+                        if (Math.abs(feetY - pu.y) <= 10 || (player.isGrounded && Math.abs(feetY - (pu.y - 4)) <= 6)) {
+                            player.y = pu.y - PLAYER_HEIGHT - 4; 
+                            player.vy = 0;
+                            player.isGrounded = true;
+                            player.isJumping = false;
+                            groundedThisFrame = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!groundedThisFrame && !player.isJumping) {
+                    player.isGrounded = false;
+                }
+            }
+
+            if (player.isGrounded && !player.isClimbing && !player.isJumping) {
+                let platData = getPlatformAt(player.x, player.y + PLAYER_HEIGHT);
+                if (platData) {
+                    player.y = platData.y - PLAYER_HEIGHT;
+                    player.vy = 0;
+                } else {
+                    player.isGrounded = false;
+                }
+            }
+
+            // --- 7. Goal Collision check ---
+            let jDist = Math.hypot(player.x - jackpotPos.x, (player.y + PLAYER_HEIGHT) - jackpotPos.y);
+            if (jDist < 20) {
+                triggerJackpotWin();
+            }
+        }
+
+        // --- LIFE DAMAGE HANDLERS ---
+        function handleDamage() {
+            playSynth('hit');
+            lives--;
+            chips = [];
+            cannonCards = [];
+            fallingDice = [];
+            particles = [];
+            updateStatsHUD();
+
+            if (lives <= 0) {
+                gameOver = true;
+                document.getElementById('gameover-overlay').style.display = 'flex';
+            } else {
+                player.x = 50;
+                player.y = 530;
+                player.vx = 0;
+                player.vy = 0;
+                player.isClimbing = false;
+                player.isGrounded = true;
+            }
+        }
+
+        function triggerJackpotWin() {
+            isPaused = true;
+            playSynth('jackpot');
+
+            let params = getLevelParams(level);
+            score += params.payout;
+
+            if (level >= 30) {
+                document.getElementById('toast-payout').innerText = `+$${params.payout.toLocaleString()} CHIPS`;
+                document.getElementById('toast-title').innerText = "🎰 BANK BROKEN! 🎰";
+                document.getElementById('toast-sub').innerText = "Ultimate Table Champion!";
+                document.getElementById('jackpot-toast').classList.add('active');
+
+                setTimeout(() => {
+                    document.getElementById('jackpot-toast').classList.remove('active');
+                    document.getElementById('victory-overlay').style.display = 'flex';
+                    gameOver = true;
+                }, 3000);
+                return;
+            }
+
+            document.getElementById('toast-payout').innerText = `+$${params.payout.toLocaleString()} CHIPS`;
+            document.getElementById('toast-sub').innerText = `Stage ${level} Cleared!`;
+
+            const toast = document.getElementById('jackpot-toast');
+            toast.classList.add('active');
+
+            setTimeout(() => {
+                toast.classList.remove('active');
+                level++;
+                loadLevel(level);
+                isPaused = false;
+            }, 3000);
+        }
+
+        // --- LEVEL INITIALIZATION ---
+        function loadLevel(lvl) {
+            const layout = generateStageLayout(lvl);
+            activePlatforms = layout.stagePlatforms;
+            activeLadders = layout.stageLadders;
+
+            jackpotPos.x = (activePlatforms[5].x1 + activePlatforms[5].x2) / 2;
+            jackpotPos.y = activePlatforms[5].y1;
+
+            chips = [];
+            cannonCards = [];
+            fallingDice = [];
+            particles = [];
+            
+            chipSpawnTimer = 0;
+            cannonTimer = 0;
+            diceTimer = 0;
+
+            player.x = 50;
+            player.y = 530;
+            player.vx = 0;
+            player.vy = 0;
+            player.isClimbing = false;
+            player.isGrounded = true;
+
+            boss.x = 100;
+            boss.y = 180;
+            boss.direction = 1;
+
+            updateStatsHUD();
+        }
+
+        // --- STAGE RENDERING ENGINE ---
+        function drawCowboy(x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.strokeStyle = '#2980b9'; 
+            ctx.lineWidth = 3.5;
+            if (player.isClimbing) {
+                ctx.beginPath();
+                ctx.moveTo(-4, 25); ctx.lineTo(-2, 30);
+                ctx.moveTo(4, 25); ctx.lineTo(2, 30);
+                ctx.stroke();
+            } else if (player.isMoving && player.isGrounded) {
+                let walkPhase = Math.sin(Date.now() / 90) * 5;
+                ctx.beginPath();
+                ctx.moveTo(-4, 25); ctx.lineTo(-4 + walkPhase, 30);
+                ctx.moveTo(4, 25); ctx.lineTo(4 - walkPhase, 30);
+                ctx.stroke();
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(-4, 25); ctx.lineTo(-4, 30);
+                ctx.moveTo(4, 25); ctx.lineTo(4, 30);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#ffddc1';
+            ctx.fillRect(-5, 12, 10, 13); 
+            ctx.fillStyle = '#eb3b5a'; 
+            ctx.fillRect(-5, 12, 3, 13);
+            ctx.fillRect(2, 12, 3, 13);
+
+            ctx.fillStyle = '#d4af37';
+            ctx.fillRect(-2, 23, 4, 3);
+
+            ctx.fillStyle = '#ffddc1';
+            ctx.beginPath();
+            ctx.arc(0, 7, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#5c4033';
+            ctx.fillRect(-10, 2, 20, 2); 
+            ctx.beginPath(); 
+            ctx.moveTo(-5, 2);
+            ctx.lineTo(-4, -4);
+            ctx.lineTo(4, -4);
+            ctx.lineTo(5, 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawDealerBoss(x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.fillStyle = '#1e272e'; 
+            ctx.fillRect(-12, 20, 24, boss.height);
+            ctx.fillStyle = '#ffffff'; 
+            ctx.beginPath();
+            ctx.moveTo(-4, 20); ctx.lineTo(4, 20); ctx.lineTo(0, 28);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#eb3b5a'; 
+            ctx.fillRect(-3, 20, 6, 3);
+
+            ctx.fillStyle = '#ffddc1';
+            ctx.beginPath();
+            ctx.arc(0, 10, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#1e272e';
+            ctx.fillRect(-6, 11, 12, 3);
+
+            ctx.fillRect(-12, 2, 24, 2);
+            ctx.fillRect(-7, -5, 14, 7);
+
+            ctx.strokeStyle = '#1e272e';
+            ctx.lineWidth = 4;
+            let cycle = Math.floor(Date.now() / 900) % 3;
+            if (cycle === 0) {
+                ctx.beginPath(); ctx.moveTo(-11, 24); ctx.lineTo(-18, 30); ctx.stroke();
+            } else if (cycle === 1) {
+                ctx.beginPath(); ctx.moveTo(-11, 24); ctx.lineTo(-20, 15); ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.moveTo(-11, 24); ctx.lineTo(-5, 20); ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawJackpotSafe(x, y) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.fillStyle = '#d4af37';
+            ctx.fillRect(-15, -15, 30, 30);
+
+            ctx.strokeStyle = '#1e272e';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = '#555555';
+            ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = (Math.floor(Date.now() / 250) % 2 === 0) ? '#ffea00' : '#ffffff';
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText("SAFE", 0, -21);
+
+            ctx.restore();
+        }
+
+        function drawCannons() {
+            if (level <= 10) return;
+            ctx.save();
+            ctx.fillStyle = '#d4af37'; // Golden Card Shooters
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+
+            let heights = [220, 310, 430];
+            heights.forEach(h => {
+                // Left Border Shooters
+                ctx.fillRect(0, h - 8, 15, 16);
+                ctx.strokeRect(0, h - 8, 15, 16);
+                ctx.fillStyle = '#1e272e';
+                ctx.fillRect(15, h - 4, 8, 8); 
+                ctx.fillStyle = '#d4af37';
+
+                // Right Border Shooters
+                ctx.fillRect(585, h - 8, 15, 16);
+                ctx.strokeRect(585, h - 8, 15, 16);
+                ctx.fillStyle = '#1e272e';
+                ctx.fillRect(577, h - 4, 8, 8); 
+                ctx.fillStyle = '#d4af37';
+            });
+            ctx.restore();
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // platforms
+            activePlatforms.forEach(p => {
+                ctx.strokeStyle = '#3e2715';
+                ctx.lineWidth = 8;
+                ctx.beginPath(); ctx.moveTo(p.x1, p.y1); ctx.lineTo(p.x2, p.y2); ctx.stroke();
+
+                ctx.strokeStyle = '#20bf6b';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(p.x1, p.y1 - 3); ctx.lineTo(p.x2, p.y2 - 3); ctx.stroke();
+            });
+
+            // ladders
+            activeLadders.forEach(l => {
+                ctx.strokeStyle = '#d4af37';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(l.x - 6, l.y1); ctx.lineTo(l.x - 6, l.y2);
+                ctx.moveTo(l.x + 6, l.y1); ctx.lineTo(l.x + 6, l.y2);
+                ctx.stroke();
+
+                ctx.lineWidth = 1.5;
+                for (let ry = l.y1 + 5; ry < l.y2; ry += 9) {
+                    ctx.beginPath(); ctx.moveTo(l.x - 6, ry); ctx.lineTo(l.x + 6, ry); ctx.stroke();
+                }
+            });
+
+            // Draw Wall Mounted shooters
+            drawCannons();
+
+            drawCowboy(player.x, player.y);
+            drawDealerBoss(boss.x, boss.y);
+            drawJackpotSafe(jackpotPos.x, jackpotPos.y);
+            
+            // Hazards
+            chips.forEach(c => c.draw());
+            cannonCards.forEach(cc => cc.draw());
+            fallingDice.forEach(fd => fd.draw());
+            particles.forEach(p => p.draw());
+        }
+
+        // --- HUD UPDATE & STAGE FLOWS ---
+        function updateStatsHUD() {
+            document.getElementById('stack-value').innerText = `$${score.toLocaleString()}`;
+            document.getElementById('level-value').innerText = `${level}/30`;
+
+            let tier = getDifficultyTier(level);
+            document.getElementById('tier-value').innerText = tier.name;
+            document.getElementById('tier-value').style.color = tier.color;
+
+            let cowboyHats = "";
+            for (let i = 0; i < lives; i++) {
+                cowboyHats += "🤠";
+            }
+            document.getElementById('lives-value').innerText = cowboyHats || "BUST";
+        }
+
+        // --- STAGE SELECTOR POPULATOR ---
+        function populateStageSelector() {
+            const grid = document.getElementById('stage-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i <= 30; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'stage-btn';
+                btn.innerText = i;
+
+                let tier = getDifficultyTier(i);
+                if (tier.name === "EASY SEAT") btn.classList.add('easy');
+                else if (tier.name === "MID STAKES") btn.classList.add('medium');
+                else btn.classList.add('hard');
+
+                btn.addEventListener('click', () => {
+                    level = i;
+                    document.getElementById('select-overlay').style.display = 'none';
+                    if (!gameStarted) {
+                        startGame();
+                    } else {
+                        loadLevel(level);
+                        isPaused = false;
+                    }
+                });
+                grid.appendChild(btn);
+            }
+        }
+
+        function startGame() {
+            initAudio();
+            document.getElementById('menu-overlay').style.display = 'none';
+            document.getElementById('gameover-overlay').style.display = 'none';
+            document.getElementById('victory-overlay').style.display = 'none';
+
+            document.getElementById('toast-title').innerText = "🎰 JACKPOT! 🎰";
+
+            score = 1000;
+            level = level || 1; 
+            lives = 3;
+
+            loadLevel(level);
+
+            gameStarted = true;
+            isPaused = false;
+            gameOver = false;
+
+            lastTime = performance.now();
+            requestAnimationFrame(mainLoop);
+        }
+
+        function mainLoop(time) {
+            if (gameStarted && !gameOver) {
+                const deltaTime = time - lastTime;
+                lastTime = time;
+
+                updateGame(deltaTime);
+                drawScene();
+                requestAnimationFrame(mainLoop);
+            }
+        }
+
+        // --- KEYBOARD LISTENERS ---
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'W', 's', 'S', 'a', 'A', 'd', 'D'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', e => {
+            keys[e.key] = false;
+        });
+
+        // Event bindings
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('rebuy-btn').addEventListener('click', startGame);
+        document.getElementById('victory-btn').addEventListener('click', startGame);
+        document.getElementById('mute-btn').addEventListener('click', toggleMute);
+
+        // Stage Selector modal control bindings
+        document.getElementById('stage-select-btn').addEventListener('click', () => {
+            isPaused = true;
+            document.getElementById('select-overlay').style.display = 'flex';
+        });
+
+        document.getElementById('close-select-btn').addEventListener('click', () => {
+            document.getElementById('select-overlay').style.display = 'none';
+            if (gameStarted) {
+                isPaused = false;
+            }
+        });
+
+        // Initialize Stage Selector
+        populateStageSelector();
+
+    </script>
+</body>
+</html>

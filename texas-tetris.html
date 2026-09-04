@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Hold 'em Tetris</title>
+    <style>
+        :root {
+            --felt-green: radial-gradient(circle, #115e34 0%, #07381c 100%);
+            --wood-border: #4a2c11;
+            --gold-accent: #d4af37;
+            --card-white: #f5f6fa;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1a120b;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: var(--gold-accent);
+            text-shadow: 0px 4px 10px rgba(212, 175, 55, 0.4);
+            letter-spacing: 2px;
+            font-weight: 800;
+        }
+
+        p.subtitle {
+            margin: 5px 0 0 0;
+            font-size: 0.95rem;
+            color: #aaa;
+        }
+
+        .game-wrapper {
+            display: flex;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px solid #332211;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+            align-items: flex-start;
+            max-width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .side-panel {
+            width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Board Container with Wood border styling */
+        .board-container {
+            position: relative;
+            background: var(--wood-border);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.8), inset 0 2px 5px rgba(255,255,255,0.2);
+        }
+
+        canvas {
+            display: block;
+            background: var(--felt-green);
+            border-radius: 6px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        /* Mini card styles */
+        .card-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .card-box h3 {
+            margin: 0 0 8px 0;
+            font-size: 0.8rem;
+            color: var(--gold-accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-display {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            min-height: 65px;
+        }
+
+        /* Playing Card CSS */
+        .poker-card {
+            width: 44px;
+            height: 62px;
+            background: var(--card-white);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4px;
+            box-sizing: border-box;
+            color: #1a1a1a;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            user-select: none;
+            font-size: 0.8rem;
+        }
+
+        .poker-card.empty {
+            background: rgba(255,255,255,0.05);
+            border: 1.5px dashed rgba(255,255,255,0.2);
+            box-shadow: none;
+        }
+
+        .poker-card .suit-center {
+            font-size: 1.25rem;
+            text-align: center;
+            margin-top: -4px;
+        }
+
+        .poker-card .card-bottom {
+            transform: rotate(180deg);
+            text-align: right;
+        }
+
+        /* 4-Color Deck Colors */
+        .suit-spade { color: #1e272e; } /* Black Spades */
+        .suit-heart { color: #eb3b5a; } /* Red Hearts */
+        .suit-diamond { color: #2d98da; } /* Blue Diamonds */
+        .suit-club { color: #20bf6b; } /* Green Clubs */
+
+        /* HUD & Controls */
+        .payout-list {
+            font-size: 0.75rem;
+            color: #ccc;
+            line-height: 1.4;
+        }
+
+        .payout-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed rgba(255,255,255,0.05);
+            padding: 2px 0;
+        }
+
+        .stat-value {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #a06e12 0%, #614002 100%);
+            border: 1px solid var(--gold-accent);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #c78d20 0%, #7e5302 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+        }
+
+        /* Overlay Menus */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            border-radius: 6px;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .overlay h2 {
+            color: var(--gold-accent);
+            margin: 0 0 10px 0;
+            font-size: 1.8rem;
+        }
+
+        .overlay p {
+            color: #ddd;
+            font-size: 0.9rem;
+            margin: 0 0 20px 0;
+            line-height: 1.4;
+        }
+
+        /* Showdown Toast (Overlay pop up) */
+        #showdown-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(10, 10, 10, 0.95);
+            border: 3px solid var(--gold-accent);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            z-index: 10;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+            color: white;
+            min-width: 220px;
+        }
+
+        #showdown-overlay.active {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        #showdown-payout {
+            font-size: 1.4rem;
+            color: #20bf6b;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .audio-ctrl {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-decoration: underline;
+            align-self: center;
+        }
+
+        @media (max-width: 800px) {
+            .game-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+            .side-panel {
+                width: 320px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+            .side-panel > * {
+                flex: 1 1 140px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TEXAS HOLD 'EM TETRIS</h1>
+        <p class="subtitle">Complete lines to deal community cards and score winning hands!</p>
+    </header>
+
+    <div class="game-wrapper">
+
+        <!-- Left Column: Hole Cards & Pays -->
+        <div class="side-panel">
+            <div class="card-box">
+                <h3>Your Hole Cards</h3>
+                <div id="hole-cards-container" class="card-display">
+                    <div class="poker-card empty"></div>
+                    <div class="poker-card empty"></div>
+                </div>
+            </div>
+
+            <div class="card-box">
+                <h3>Payout Table</h3>
+                <div class="payout-list">
+                    <div class="payout-item"><span>Royal Flush</span><span>+$25k</span></div>
+                    <div class="payout-item"><span>Straight Flush</span><span>+$15k</span></div>
+                    <div class="payout-item"><span>Four of a Kind</span><span>+$10k</span></div>
+                    <div class="payout-item"><span>Full House</span><span>+$5k</span></div>
+                    <div class="payout-item"><span>Flush</span><span>+$3k</span></div>
+                    <div class="payout-item"><span>Straight</span><span>+$2k</span></div>
+                    <div class="payout-item"><span>Three of a Kind</span><span>+$1k</span></div>
+                    <div class="payout-item"><span>Two Pair</span><span>+$500</span></div>
+                    <div class="payout-item"><span>Pair</span><span>+$250</span></div>
+                    <div class="payout-item"><span>High Card</span><span>+$100</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Column: Main Grid -->
+        <div class="board-container">
+            <!-- Start Menu Screen -->
+            <div id="start-menu" class="overlay">
+                <h2>Buy In to Play</h2>
+                <p>Welcome to the high-stakes table. Grid blocks are playing cards. Line completions act as wins, dealing cards to the community pool. Turn 5 community cards to prompt a Showdown!</p>
+                <button class="btn" onclick="startGame()">Buy In ($1,000)</button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="gameover-menu" class="overlay" style="display: none;">
+                <h2 style="color: #eb3b5a;">Busted!</h2>
+                <p>You ran out of table space. Re-buy to get back in the action.</p>
+                <button class="btn" onclick="startGame()">Re-Buy ($1,000)</button>
+            </div>
+
+            <!-- Showdown Toast Message -->
+            <div id="showdown-overlay">
+                <h3 style="margin:0; color: var(--gold-accent);">SHOWDOWN!</h3>
+                <div id="showdown-hand-name" style="font-size: 1.2rem; margin-top: 10px; font-weight: bold;">FULL HOUSE</div>
+                <div id="showdown-payout">+$5,000 CHIPS</div>
+            </div>
+
+            <canvas id="tetris" width="300" height="600"></canvas>
+        </div>
+
+        <!-- Right Column: Community Cards, Level & Next -->
+        <div class="side-panel">
+            <div class="card-box">
+                <h3>Community Board</h3>
+                <div id="community-cards-container" class="card-display">
+                    <div class="poker-card empty"></div>
+                    <div class="poker-card empty"></div>
+                    <div class="poker-card empty"></div>
+                    <div class="poker-card empty"></div>
+                    <div class="poker-card empty"></div>
+                </div>
+            </div>
+
+            <div class="card-box" style="text-align: left;">
+                <div style="margin-bottom: 8px;">
+                    <div style="font-size: 0.75rem; color: var(--gold-accent);">CHIP STACK</div>
+                    <div id="stat-chips" class="stat-value">$1,000</div>
+                </div>
+                <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--gold-accent);">HANDS WON</div>
+                        <div id="stat-lines" class="stat-value" style="font-size: 1rem;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--gold-accent);">BLINDS</div>
+                        <div id="stat-blinds" class="stat-value" style="font-size: 1rem;">10/20</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-box" style="display: flex; flex-direction: column; align-items: center;">
+                <h3>Next Block</h3>
+                <canvas id="next" width="100" height="100" style="background: rgba(0,0,0,0.3); border-radius: 4px; box-shadow: none;"></canvas>
+            </div>
+
+            <button class="btn" id="pause-btn" onclick="togglePause()" style="display:none;">Pause</button>
+            <button class="audio-ctrl" onclick="toggleMute()" id="mute-btn">Mute SFX</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- TETRIS GAME LOGIC ---
+        const canvas = document.getElementById('tetris');
+        const ctx = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('next');
+        const nextCtx = nextCanvas.getContext('2d');
+
+        const GRID_ROWS = 20;
+        const GRID_COLS = 10;
+        const BLOCK_SIZE = 30;
+
+        let board = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
+        let score = 1000;
+        let totalLines = 0;
+        let currentLevel = 1;
+        let gameStarted = false;
+        let gameOver = false;
+        let isPaused = false;
+        let isMuted = false;
+
+        let dropCounter = 0;
+        let dropInterval = 1000;
+        let lastTime = 0;
+
+        let currentPiece = null;
+        let nextPiece = null;
+
+        // --- DECK & HOLD 'EM LOGIC ---
+        const SUITS = [
+            { symbol: '♠', class: 'suit-spade' },
+            { symbol: '♥', class: 'suit-heart' },
+            { symbol: '♦', class: 'suit-diamond' },
+            { symbol: '♣', class: 'suit-club' }
+        ];
+
+        const CARD_VALUES = [
+            { val: '2', num: 2 }, { val: '3', num: 3 }, { val: '4', num: 4 },
+            { val: '5', num: 5 }, { val: '6', num: 6 }, { val: '7', num: 7 },
+            { val: '8', num: 8 }, { val: '9', num: 9 }, { val: '10', num: 10 },
+            { val: 'J', num: 11 }, { val: 'Q', num: 12 }, { val: 'K', num: 13 },
+            { val: 'A', num: 14 }
+        ];
+
+        let deck = [];
+        let holeCards = [];
+        let communityCards = [];
+
+        // Synthesized sound framework (Web Audio API)
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (isMuted || !audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'chip') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1300, now + 0.05);
+                gainNode.gain.setValueAtTime(0.1, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'deal') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'clear') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.type = 'triangle';
+                osc2.frequency.setValueAtTime(659.25, now + 0.05); // E5
+                gain2.gain.setValueAtTime(0.15, now + 0.05);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc2.start(now + 0.05);
+                osc2.stop(now + 0.3);
+            } else if (type === 'showdown') {
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C Arpeggio
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.type = 'sawtooth';
+                    o.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    g.gain.setValueAtTime(0.08, now + idx * 0.1);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.4);
+                    o.start(now + idx * 0.1);
+                    o.stop(now + idx * 0.1 + 0.4);
+                });
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(280, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.6);
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? "Unmute SFX" : "Mute SFX";
+        }
+
+        // --- DECK MANAGEMENT ---
+        function resetDeck() {
+            deck = [];
+            for (let suit of SUITS) {
+                for (let val of CARD_VALUES) {
+                    deck.push({ suit: suit.symbol, cssClass: suit.class, value: val.val, numValue: val.num });
+                }
+            }
+            shuffleDeck();
+        }
+
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        function drawCardFromDeck() {
+            if (deck.length === 0) {
+                resetDeck();
+            }
+            return deck.pop();
+        }
+
+        // --- POKER CARD ELEMENT CREATION ---
+        function createCardHTML(card) {
+            const el = document.createElement('div');
+            el.className = `poker-card`;
+            el.innerHTML = `
+                <div class="${card.cssClass}">${card.value}</div>
+                <div class="suit-center ${card.cssClass}">${card.suit}</div>
+                <div class="card-bottom ${card.cssClass}">${card.value}</div>
+            `;
+            return el;
+        }
+
+        function renderHoleCards() {
+            const container = document.getElementById('hole-cards-container');
+            container.innerHTML = '';
+            holeCards.forEach(card => {
+                container.appendChild(createCardHTML(card));
+            });
+        }
+
+        function renderCommunityCards() {
+            const container = document.getElementById('community-cards-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                if (communityCards[i]) {
+                    container.appendChild(createCardHTML(communityCards[i]));
+                } else {
+                    const emptyCard = document.createElement('div');
+                    emptyCard.className = 'poker-card empty';
+                    container.appendChild(emptyCard);
+                }
+            }
+        }
+
+        // --- TETROMINO STRUCTURES ---
+        const SHAPES = {
+            'I': [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]],
+            'O': [[1,1], [1,1]],
+            'T': [[0,1,0], [1,1,1], [0,0,0]],
+            'S': [[0,1,1], [1,1,0], [0,0,0]],
+            'Z': [[1,1,0], [0,1,1], [0,0,0]],
+            'J': [[1,0,0], [1,1,1], [0,0,0]],
+            'L': [[0,0,1], [1,1,1], [0,0,0]]
+        };
+
+        class Piece {
+            constructor(shapeKey) {
+                this.shapeKey = shapeKey;
+                // Map the solid shape blocks directly to dynamic Card values
+                this.matrix = SHAPES[shapeKey].map(row => row.map(cell => {
+                    if (cell === 1) {
+                        return drawCardFromDeck();
+                    }
+                    return null;
+                }));
+                this.x = Math.floor((GRID_COLS - this.matrix[0].length) / 2);
+                this.y = 0;
+            }
+        }
+
+        let shapeBag = [];
+        function getRandomShape() {
+            if (shapeBag.length === 0) {
+                shapeBag = Object.keys(SHAPES);
+                for (let i = shapeBag.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shapeBag[i], shapeBag[j]] = [shapeBag[j], shapeBag[i]];
+                }
+            }
+            return shapeBag.pop();
+        }
+
+        // --- RENDERING TO CANVAS ---
+        function drawCardCell(targetCtx, x, y, size, card) {
+            if (!card) return;
+            
+            // Background
+            targetCtx.fillStyle = '#f5f6fa';
+            targetCtx.beginPath();
+            targetCtx.roundRect(x + 1, y + 1, size - 2, size - 2, 4);
+            targetCtx.fill();
+
+            // Card Border
+            targetCtx.strokeStyle = '#bdc581';
+            targetCtx.lineWidth = 1;
+            targetCtx.stroke();
+
+            // Text configuration
+            let isRed = card.suit === '♥' || card.suit === '♦';
+            let isBlue = card.suit === '♦';
+            let isGreen = card.suit === '♣';
+
+            let suitColor = '#1e272e'; // Spades: Dark Slate
+            if (isRed) suitColor = '#eb3b5a'; // Hearts: Ruby Red
+            if (isBlue) suitColor = '#2d98da'; // Diamonds: Sapphire Blue
+            if (isGreen) suitColor = '#20bf6b'; // Clubs: Emerald Green
+
+            targetCtx.fillStyle = suitColor;
+            targetCtx.textAlign = 'center';
+            targetCtx.textBaseline = 'middle';
+
+            // Value text
+            targetCtx.font = `bold ${Math.floor(size * 0.3)}px monospace`;
+            targetCtx.fillText(card.value, x + 7, y + 8);
+
+            // Suit Center Symbol
+            targetCtx.font = `${Math.floor(size * 0.45)}px sans-serif`;
+            targetCtx.fillText(card.suit, x + size / 2, y + size / 2 + 3);
+        }
+
+        function draw() {
+            // Draw Main Felt Board
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Subtle Grid Line Overlay
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            for (let col = 1; col < GRID_COLS; col++) {
+                ctx.beginPath();
+                ctx.moveTo(col * BLOCK_SIZE, 0);
+                ctx.lineTo(col * BLOCK_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            for (let row = 1; row < GRID_ROWS; row++) {
+                ctx.beginPath();
+                ctx.moveTo(0, row * BLOCK_SIZE);
+                ctx.lineTo(canvas.width, row * BLOCK_SIZE);
+                ctx.stroke();
+            }
+
+            // Draw Static Grid Content
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (board[r][c]) {
+                        drawCardCell(ctx, c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, board[r][c]);
+                    }
+                }
+            }
+
+            // Draw Active Piece
+            if (currentPiece) {
+                for (let r = 0; r < currentPiece.matrix.length; r++) {
+                    for (let c = 0; c < currentPiece.matrix[r].length; c++) {
+                        if (currentPiece.matrix[r][c]) {
+                            drawCardCell(ctx, (currentPiece.x + c) * BLOCK_SIZE, (currentPiece.y + r) * BLOCK_SIZE, BLOCK_SIZE, currentPiece.matrix[r][c]);
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawNextPiece() {
+            nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            if (!nextPiece) return;
+
+            const matrix = nextPiece.matrix;
+            const size = 20;
+            const offsetX = (nextCanvas.width - matrix[0].length * size) / 2;
+            const offsetY = (nextCanvas.height - matrix.length * size) / 2;
+
+            for (let r = 0; r < matrix.length; r++) {
+                for (let c = 0; c < matrix[r].length; c++) {
+                    if (matrix[r][c]) {
+                        drawCardCell(nextCtx, offsetX + c * size, offsetY + r * size, size, matrix[r][c]);
+                    }
+                }
+            }
+        }
+
+        // --- TETRIS COLLISIONS & MOVEMENT ---
+        function checkCollision() {
+            const matrix = currentPiece.matrix;
+            for (let r = 0; r < matrix.length; r++) {
+                for (let c = 0; c < matrix[r].length; c++) {
+                    if (matrix[r][c]) {
+                        const boardX = currentPiece.x + c;
+                        const boardY = currentPiece.y + r;
+
+                        if (boardX < 0 || boardX >= GRID_COLS || boardY >= GRID_ROWS) {
+                            return true;
+                        }
+                        if (boardY >= 0 && board[boardY][boardX] !== null) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function rotateMatrix(matrix) {
+            const N = matrix.length;
+            let result = Array.from({ length: N }, () => Array(N).fill(null));
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    result[c][N - 1 - r] = matrix[r][c];
+                }
+            }
+            return result;
+        }
+
+        function rotatePiece() {
+            const originalMatrix = currentPiece.matrix;
+            currentPiece.matrix = rotateMatrix(currentPiece.matrix);
+            
+            // Basic Wall Kick
+            if (checkCollision()) {
+                currentPiece.x -= 1;
+                if (checkCollision()) {
+                    currentPiece.x += 2;
+                    if (checkCollision()) {
+                        // Revert
+                        currentPiece.x -= 1;
+                        currentPiece.matrix = originalMatrix;
+                    }
+                }
+            }
+        }
+
+        function moveLeft() {
+            currentPiece.x--;
+            if (checkCollision()) {
+                currentPiece.x++;
+            }
+        }
+
+        function moveRight() {
+            currentPiece.x++;
+            if (checkCollision()) {
+                currentPiece.x--;
+            }
+        }
+
+        function moveDown() {
+            currentPiece.y++;
+            if (checkCollision()) {
+                currentPiece.y--;
+                freeze();
+                checkLines();
+                spawnPiece();
+                playSound('chip');
+            }
+            dropCounter = 0;
+        }
+
+        function hardDrop() {
+            let dropDist = 0;
+            while (!checkCollision()) {
+                currentPiece.y++;
+                dropDist++;
+            }
+            currentPiece.y--;
+            if (dropDist > 0) {
+                score += dropDist; // 1 chip per dropped row
+                updateStatsUI();
+            }
+            freeze();
+            checkLines();
+            spawnPiece();
+            playSound('chip');
+            dropCounter = 0;
+        }
+
+        function freeze() {
+            for (let r = 0; r < currentPiece.matrix.length; r++) {
+                for (let c = 0; c < currentPiece.matrix[r].length; c++) {
+                    if (currentPiece.matrix[r][c]) {
+                        const boardY = currentPiece.y + r;
+                        const boardX = currentPiece.x + c;
+                        if (boardY >= 0) {
+                            board[boardY][boardX] = currentPiece.matrix[r][c];
+                        }
+                    }
+                }
+            }
+        }
+
+        function spawnPiece() {
+            currentPiece = nextPiece || new Piece(getRandomShape());
+            nextPiece = new Piece(getRandomShape());
+            drawNextPiece();
+
+            if (checkCollision()) {
+                gameOver = true;
+                playSound('gameover');
+                document.getElementById('gameover-menu').style.display = 'flex';
+                document.getElementById('pause-btn').style.display = 'none';
+            }
+        }
+
+        // --- LINE CLEAR & CARD DEALING MECHANICS ---
+        function checkLines() {
+            let cleared = 0;
+            for (let r = GRID_ROWS - 1; r >= 0; r--) {
+                if (board[r].every(cell => cell !== null)) {
+                    board.splice(r, 1);
+                    board.unshift(Array(GRID_COLS).fill(null));
+                    cleared++;
+                    r++; // evaluate same index again after shifting
+                }
+            }
+
+            if (cleared > 0) {
+                totalLines += cleared;
+                
+                // Classic tetris multipliers translated to poker table buy-ins
+                const lineChips = [0, 100, 300, 500, 1000];
+                score += lineChips[cleared] * currentLevel;
+                
+                // Adjust Blind sizes (Difficulty Levels) every 10 cleared lines
+                currentLevel = Math.floor(totalLines / 10) + 1;
+                dropInterval = Math.max(100, 1000 - (currentLevel - 1) * 120);
+
+                playSound('clear');
+                updateStatsUI();
+
+                // Increment Hold 'em cards process asynchronously
+                dealCardsProcess(cleared);
+            }
+        }
+
+        // Deal cards and wait if we hit a showdown
+        let pendingDeals = 0;
+        function dealCardsProcess(clearedLines) {
+            pendingDeals += clearedLines;
+            executeNextDeal();
+        }
+
+        function executeNextDeal() {
+            if (pendingDeals <= 0 || isPaused || gameOver) return;
+
+            if (communityCards.length < 5) {
+                communityCards.push(drawCardFromDeck());
+                pendingDeals--;
+                playSound('deal');
+                renderCommunityCards();
+
+                if (communityCards.length === 5) {
+                    // Halt game execution and trigger showdown
+                    triggerShowdown(() => {
+                        // Resumes processing remaining pending deals
+                        executeNextDeal();
+                    });
+                } else {
+                    setTimeout(executeNextDeal, 200);
+                }
+            } else {
+                // Safely handles situations with leftover deals if card limit is somehow pushed
+                pendingDeals = 0;
+            }
+        }
+
+        // --- SHOWDOWN POKER EVALUATION ---
+        function triggerShowdown(callback) {
+            isPaused = true;
+            
+            // Combine Hole Cards & Community Board
+            const totalHand = [...holeCards, ...communityCards];
+            const showdownResult = evaluate7CardHand(totalHand);
+
+            const overlay = document.getElementById('showdown-overlay');
+            document.getElementById('showdown-hand-name').innerText = showdownResult.name;
+            document.getElementById('showdown-payout').innerText = `+$${showdownResult.bonus.toLocaleString()} CHIPS`;
+            
+            playSound('showdown');
+            overlay.classList.add('active');
+
+            setTimeout(() => {
+                score += showdownResult.bonus;
+                updateStatsUI();
+
+                // Tear down board cards and prepare for next deal cycle
+                overlay.classList.remove('active');
+                communityCards = [];
+                holeCards = [drawCardFromDeck(), drawCardFromDeck()];
+                
+                renderHoleCards();
+                renderCommunityCards();
+
+                isPaused = false;
+                callback();
+            }, 2500);
+        }
+
+        // Simplified yet effective Poker Evaluator (7-Card High Selection)
+        function evaluate7CardHand(cards) {
+            const sorted = [...cards].sort((a,b) => b.numValue - a.numValue);
+
+            // Suit Count Check
+            let suitMap = {};
+            cards.forEach(c => suitMap[c.suit] = (suitMap[c.suit] || 0) + 1);
+            let flushSuit = Object.keys(suitMap).find(s => suitMap[s] >= 5);
+
+            // Value Rank Count Check
+            let rankMap = {};
+            cards.forEach(c => rankMap[c.numValue] = (rankMap[c.numValue] || 0) + 1);
+
+            let frequencies = Object.entries(rankMap).map(([rank, count]) => ({
+                rank: parseInt(rank),
+                count: count
+            })).sort((a,b) => b.count - a.count || b.rank - a.rank);
+
+            // Straight Check
+            let uniqueRanks = [...new Set(cards.map(c => c.numValue))].sort((a,b) => b - a);
+            let straightHigh = checkStraight(uniqueRanks);
+
+            // Straight Flush Check
+            let straightFlush = false;
+            if (flushSuit) {
+                let flushCards = cards.filter(c => c.suit === flushSuit);
+                let flushRanks = [...new Set(flushCards.map(c => c.numValue))].sort((a,b) => b - a);
+                let sfHigh = checkStraight(flushRanks);
+                if (sfHigh) {
+                    straightFlush = true;
+                    straightHigh = sfHigh;
+                }
+            }
+
+            // Evaluation Cascade
+            if (straightFlush) {
+                if (straightHigh === 14) return { name: "ROYAL FLUSH!", bonus: 25000 };
+                return { name: "STRAIGHT FLUSH!", bonus: 15000 };
+            }
+            if (frequencies[0].count === 4) {
+                return { name: "FOUR OF A KIND!", bonus: 10000 };
+            }
+            if (frequencies[0].count === 3 && (frequencies[1]?.count >= 2)) {
+                return { name: "FULL HOUSE!", bonus: 5000 };
+            }
+            if (flushSuit) {
+                return { name: "FLUSH!", bonus: 3000 };
+            }
+            if (straightHigh) {
+                return { name: "STRAIGHT!", bonus: 2000 };
+            }
+            if (frequencies[0].count === 3) {
+                return { name: "THREE OF A KIND!", bonus: 1000 };
+            }
+            if (frequencies[0].count === 2 && frequencies[1]?.count === 2) {
+                return { name: "TWO PAIR!", bonus: 500 };
+            }
+            if (frequencies[0].count === 2) {
+                let textLabels = {11:'Jacks', 12:'Queens', 13:'Kings', 14:'Aces'};
+                let displayVal = textLabels[frequencies[0].rank] || `${frequencies[0].rank}s`;
+                return { name: `PAIR OF ${displayVal.toUpperCase()}`, bonus: 250 };
+            }
+
+            let highRankText = sorted[0].value;
+            return { name: `HIGH CARD (${highRankText})`, bonus: 100 };
+        }
+
+        function checkStraight(ranks) {
+            for (let i = 0; i <= ranks.length - 5; i++) {
+                if (ranks[i] - ranks[i+4] === 4) {
+                    return ranks[i];
+                }
+            }
+            // Low-Ace exception handling (5, 4, 3, 2, A)
+            if (ranks.includes(14) && ranks.includes(5) && ranks.includes(4) && ranks.includes(3) && ranks.includes(2)) {
+                return 5;
+            }
+            return null;
+        }
+
+        // --- STATS UI UPDATING ---
+        function updateStatsUI() {
+            document.getElementById('stat-chips').innerText = `$${score.toLocaleString()}`;
+            document.getElementById('stat-lines').innerText = totalLines;
+            
+            // Custom blind schedule values matching level indices
+            let sb = 10, bb = 20;
+            if (currentLevel > 1) { sb = currentLevel * 15; bb = sb * 2; }
+            document.getElementById('stat-blinds').innerText = `${sb}/${bb}`;
+        }
+
+        // --- GAME CONTROL MANAGEMENT ---
+        function startGame() {
+            initAudio();
+            document.getElementById('start-menu').style.display = 'none';
+            document.getElementById('gameover-menu').style.display = 'none';
+            document.getElementById('pause-btn').style.display = 'block';
+
+            // Variable Resets
+            board = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
+            score = 1000;
+            totalLines = 0;
+            currentLevel = 1;
+            dropInterval = 1000;
+            gameOver = false;
+            isPaused = false;
+            gameStarted = true;
+            pendingDeals = 0;
+
+            resetDeck();
+
+            holeCards = [drawCardFromDeck(), drawCardFromDeck()];
+            communityCards = [];
+
+            renderHoleCards();
+            renderCommunityCards();
+            updateStatsUI();
+
+            spawnPiece();
+            
+            lastTime = performance.now();
+            requestAnimationFrame(updateLoop);
+        }
+
+        function togglePause() {
+            if (gameOver || !gameStarted) return;
+            isPaused = !isPaused;
+            document.getElementById('pause-btn').innerText = isPaused ? "Resume" : "Pause";
+        }
+
+        function updateLoop(time = 0) {
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            if (gameStarted && !gameOver && !isPaused) {
+                dropCounter += deltaTime;
+                if (dropCounter > dropInterval) {
+                    moveDown();
+                }
+                draw();
+            }
+            requestAnimationFrame(updateLoop);
+        }
+
+        // --- KEYBOARD LISTENER ---
+        window.addEventListener('keydown', event => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)) {
+                // Prevents standard browser arrow navigation
+                event.preventDefault();
+            }
+
+            if (!gameStarted || gameOver || isPaused) return;
+
+            switch (event.key) {
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    moveRight();
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    moveDown();
+                    break;
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    rotatePiece();
+                    break;
+                case ' ':
+                    hardDrop();
+                    break;
+            }
+        });
+
+    </script>
+</body>
+</html>

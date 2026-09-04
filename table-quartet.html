@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Table Quartet: High Stakes Arcade</title>
+    <style>
+        :root {
+            --felt-green: radial-gradient(circle, #115e34 0%, #07381c 100%);
+            --wood-trim: #4a2711;
+            --gold: #d4af37;
+            --hud-bg: rgba(0, 0, 0, 0.45);
+            --card-white: #f5f6fa;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #110d0a;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            margin: 5px 0 15px 0;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        /* Hub Layout Wrapper */
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            width: 820px;
+            background: #1e1510;
+            border: 12px solid var(--wood-trim);
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 15px rgba(0,0,0,0.9);
+            padding: 15px;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        /* Navigation HUD */
+        .master-hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--hud-bg);
+            border: 1.5px dashed rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+        }
+
+        .hud-left {
+            display: flex;
+            gap: 15px;
+        }
+
+        .hud-item {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .hud-label {
+            color: var(--gold);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .btn-lobby {
+            background: #444;
+            border: 1px solid #666;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        .btn-lobby:hover {
+            background: #666;
+        }
+
+        /* --- SCREEN CONTROLS --- */
+        .screen {
+            display: none;
+            width: 100%;
+            min-height: 480px;
+            background: var(--felt-green);
+            border-radius: 6px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+            border: 4px solid #000;
+            box-sizing: border-box;
+            padding: 20px;
+            position: relative;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* --- LOBBY SCREEN (GAME SELECTION) --- */
+        .lobby-grid {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .game-card {
+            flex: 1 1 180px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--gold);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            max-width: 180px;
+            min-height: 190px;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .game-card h2 {
+            font-size: 1rem;
+            color: var(--gold);
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+        }
+
+        .game-card p {
+            font-size: 0.7rem;
+            color: #ccc;
+            line-height: 1.4;
+            margin: 0 0 12px 0;
+            height: 60px;
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, #a06e12 0%, #614002 100%);
+            border: 1px solid var(--gold);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .btn-play:hover {
+            background: linear-gradient(135deg, #c78d20 0%, #7e5302 100%);
+        }
+
+        /* Level Selector overlays */
+        .level-select-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 8px;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 550px;
+        }
+
+        .level-btn {
+            background: rgba(0,0,0,0.5);
+            border: 1.5px solid #555;
+            color: #fff;
+            padding: 8px 0;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+
+        .level-btn:hover {
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+
+        .level-btn.easy { border-color: #20bf6b; background: rgba(32, 191, 107, 0.15); }
+        .level-btn.medium { border-color: #2d98da; background: rgba(45, 152, 218, 0.15); }
+        .level-btn.hard { border-color: #eb3b5a; background: rgba(235, 59, 90, 0.15); }
+
+        /* --- GAME 1: TIC-TAC-TOE --- */
+        .ttt-container {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            justify-content: center;
+            height: 380px;
+        }
+
+        .ttt-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 260px;
+            height: 260px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 8px;
+            border: 2px solid var(--gold);
+        }
+
+        .ttt-cell {
+            background: #fff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #000;
+            transition: background 0.15s;
+            user-select: none;
+        }
+
+        .ttt-cell:hover {
+            background: #e2e2e2;
+        }
+
+        .ttt-cell.taken {
+            cursor: not-allowed;
+        }
+
+        .suit-spade { color: #1e272e; }
+        .suit-heart { color: #eb3b5a; }
+
+        .ttt-sidebar {
+            width: 250px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 6px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* --- GAME 2: CHIP SORT --- */
+        .sort-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 380px;
+        }
+
+        .tubes-area {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+            min-height: 180px;
+            align-items: flex-end;
+        }
+
+        .tube {
+            width: 48px;
+            height: 160px;
+            border: 3px solid rgba(255,255,255,0.4);
+            border-top: none;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column-reverse;
+            padding: 8px 4px;
+            box-sizing: border-box;
+            gap: 6px;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .tube.selected {
+            transform: translateY(-15px);
+            border-color: var(--gold);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .sort-chip {
+            width: 34px;
+            height: 24px;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,255,255,0.4);
+            border: 1.5px dashed #ffffff;
+            box-sizing: border-box;
+        }
+
+        /* --- GAME 3: MATCH-3 --- */
+        .match-container {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+        }
+
+        .match-grid-bezel {
+            background: #2d1e15;
+            border: 6px solid var(--wood-trim);
+            border-radius: 10px;
+            padding: 6px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+        }
+
+        .match-board {
+            display: grid;
+            grid-template-columns: repeat(7, 44px);
+            grid-template-rows: repeat(7, 44px);
+            gap: 4px;
+            background: rgba(0,0,0,0.3);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .match-tile {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .match-tile.selected {
+            background: rgba(212, 175, 55, 0.25);
+            border-color: var(--gold);
+        }
+
+        .match-tile.clearing {
+            transform: scale(0);
+            opacity: 0;
+            transition: all 0.25s ease-out;
+        }
+
+        .match-sidebar {
+            width: 220px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 6px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .match-goals {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .goal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        /* --- GAME 4: CONNECT FOUR --- */
+        .c4-container {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            justify-content: center;
+            height: 390px;
+        }
+
+        .c4-board-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .c4-drop-row {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            width: 320px;
+            margin-bottom: 8px;
+            padding: 0 8px;
+            box-sizing: border-box;
+        }
+
+        .c4-drop-btn {
+            background: linear-gradient(135deg, #a06e12 0%, #614002 100%);
+            border: 1px solid var(--gold);
+            color: #fff;
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 4px 0;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .c4-drop-btn:hover {
+            background: linear-gradient(135deg, #c78d20 0%, #7e5302 100%);
+        }
+
+        .c4-board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            width: 320px;
+            height: 280px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 8px;
+            border: 2px solid var(--gold);
+            box-sizing: border-box;
+        }
+
+        .c4-cell {
+            background: #07381c; /* Felt circle background */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+            user-select: none;
+        }
+
+        .toast-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(10, 10, 10, 0.98);
+            border: 3px solid var(--gold);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            min-width: 260px;
+        }
+
+        .toast-msg.active {
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        /* Stage selection grid styling */
+        .stage-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            max-width: 420px;
+            margin: 15px auto;
+        }
+
+        .stage-btn {
+            background: #222;
+            border: 2px solid #555;
+            color: #fff;
+            padding: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+
+        .stage-btn:hover {
+            transform: scale(1.1);
+            border-color: #fff;
+        }
+
+        .stage-btn.easy { border-color: #20bf6b; background: rgba(32, 191, 107, 0.1); }
+        .stage-btn.medium { border-color: #2d98da; background: rgba(45, 152, 218, 0.1); }
+        .stage-btn.hard { border-color: #eb3b5a; background: rgba(235, 59, 90, 0.1); }
+
+        .mute-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            text-decoration: underline;
+            font-family: inherit;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            align-self: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>TEXAS TABLE QUARTET</h1>
+        <p class="subtitle">Drag to swap match-3 tiles, drop connect chips, and beat 50 levels per table!</p>
+    </header>
+
+    <div class="game-wrapper">
+
+        <!-- Master HUD Navigation bar -->
+        <div class="master-hud">
+            <button class="btn-lobby" id="btn-return-lobby" style="display:none;">Lobby</button>
+            <div id="game-title-label" style="font-weight:bold; color: var(--gold); font-size:1.1rem; text-transform:uppercase;">Casino Lobby</div>
+            
+            <div class="hud-left">
+                <div class="hud-item">
+                    <span class="hud-label">STACK:</span>
+                    <span id="global-chips-val" style="color:#fff;">$1,000</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pop-Up message modal -->
+        <div id="toast-modal" class="toast-msg">
+            <h3 id="toast-header" style="margin: 0 0 10px 0; color: var(--gold); letter-spacing: 1px;">SHOWDOWN!</h3>
+            <p id="toast-body" style="font-size: 0.9rem; line-height: 1.4; color: #eee; margin: 0 0 15px 0;">You cleared the stage!</p>
+            <button class="btn-play" id="toast-btn">Continue</button>
+        </div>
+
+        <!-- 1. LOBBY SCREEN (GAME SELECTION) -->
+        <div id="screen-lobby" class="screen active">
+            <div class="lobby-grid">
+                <div class="game-card" onclick="openGameSelection('ttt')">
+                    <h2>Tic-Tac-Toe</h2>
+                    <p>Beat 50 unique saloon dealers in strategic card-suit duals.</p>
+                    <button class="btn-play">Select</button>
+                </div>
+                <div class="game-card" onclick="openGameSelection('sort')">
+                    <h2>Chip Sort</h2>
+                    <p>Sort randomized mixed poker chips back into matching stacks.</p>
+                    <button class="btn-play">Select</button>
+                </div>
+                <div class="game-card" onclick="openGameSelection('match')">
+                    <h2>Match-3</h2>
+                    <p>Drag adjacent cards to clear matches. Meet the coin target under limited moves.</p>
+                    <button class="btn-play">Select</button>
+                </div>
+                <div class="game-card" onclick="openGameSelection('c4')">
+                    <h2>Connect-4</h2>
+                    <p>Drop chips against 50 high-stakes opponents. Align four Spades to win!</p>
+                    <button class="btn-play">Select</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. GAME SELECT OVERLAYS -->
+        <div id="screen-level-select" class="screen">
+            <div class="level-select-container">
+                <h2 id="level-select-title" style="color:var(--gold); margin: 0 0 5px 0;">SELECT LEVEL</h2>
+                <p style="font-size:0.85rem; color:#ccc; margin:0 0 15px 0;">Select your table difficulty stakes to proceed:</p>
+                <div class="level-grid" id="level-grid-container"></div>
+            </div>
+        </div>
+
+        <!-- 3. TIC-TAC-TOE STAGE -->
+        <div id="stage-ttt" class="screen">
+            <div class="ttt-container">
+                <div class="ttt-board" id="ttt-board-container">
+                    <div class="ttt-cell" data-idx="0"></div>
+                    <div class="ttt-cell" data-idx="1"></div>
+                    <div class="ttt-cell" data-idx="2"></div>
+                    <div class="ttt-cell" data-idx="3"></div>
+                    <div class="ttt-cell" data-idx="4"></div>
+                    <div class="ttt-cell" data-idx="5"></div>
+                    <div class="ttt-cell" data-idx="6"></div>
+                    <div class="ttt-cell" data-idx="7"></div>
+                    <div class="ttt-cell" data-idx="8"></div>
+                </div>
+
+                <div class="ttt-sidebar">
+                    <h3 id="ttt-dealer-name" style="margin: 0 0 10px 0; color: var(--gold); text-transform:uppercase;">Dealer</h3>
+                    <div style="font-size: 0.85rem; line-height: 1.5; color:#ccc; margin-bottom: 15px;" id="ttt-dealer-bio">
+                        Prepare to face off against the saloon's starter dealer. Plays standard defensive cards.
+                    </div>
+                    <div style="border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px; font-size:0.85rem;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>Buy-In:</span><span id="ttt-buyin" style="color: #eb3b5a;">$100</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Pot Payout:</span><span id="ttt-payout" style="color: #20bf6b;">$250</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. CHIP SORT STAGE -->
+        <div id="stage-sort" class="screen">
+            <div class="sort-container">
+                <div class="tubes-area" id="tubes-area-container"></div>
+                <div style="font-size:0.8rem; color:#aaa; max-width:400px; text-align:center;">
+                    Click a glass to select the top poker chip. Click another glass with space to transfer. Sort stacks into matching colors!
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. MATCH-3 STAGE -->
+        <div id="stage-match" class="screen">
+            <div class="match-container">
+                <div class="match-grid-bezel">
+                    <div class="match-board" id="match-board-container"></div>
+                </div>
+
+                <div class="match-sidebar">
+                    <div style="text-align:center;">
+                        <div class="hud-label">MOVES LEFT</div>
+                        <div id="match-moves-left" style="font-size: 2rem; font-weight:bold; color: #fff;">25</div>
+                    </div>
+
+                    <div class="match-goals">
+                        <div class="hud-label" style="text-align:center; margin-bottom:5px;">GOALS</div>
+                        <div id="match-goal-1" class="goal-item"><span>♠ Spades</span><span>0/15</span></div>
+                        <div id="match-goal-2" class="goal-item"><span>♥ Hearts</span><span>0/15</span></div>
+                    </div>
+
+                    <div style="border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px; font-size:0.8rem; text-align:center; color:#aaa; line-height:1.4;">
+                        Drag and slide adjacent cards to swap and create horizontal or vertical matches of 3 or more symbols.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. CONNECT FOUR STAGE -->
+        <div id="stage-c4" class="screen">
+            <div class="c4-container">
+                <div class="c4-board-area">
+                    <!-- Drop column triggers -->
+                    <div class="c4-drop-row">
+                        <button class="c4-drop-btn" onclick="triggerC4Drop(0)">1</button>
+                        <button class="c4-drop-btn" onclick="triggerC4Drop(1)">2</button>
+                        <button class="c4-drop-btn" onclick="triggerC4Drop(2)">3</button>
+                        <button class="c4-drop-btn" onclick="triggerC4Drop(3)">4</button>
+                        <button class="c4-drop-btn" onclick="triggerC4Drop(4)">5</button>
+                        <button class="c4-drop-btn" onclick="triggerC4Drop(5)">6</button>
+                        <button class="c4-drop-btn" onclick="triggerC4Drop(6)">7</button>
+                    </div>
+
+                    <!-- Connect board -->
+                    <div class="c4-board" id="c4-board-container"></div>
+                </div>
+
+                <div class="ttt-sidebar">
+                    <h3 id="c4-dealer-name" style="margin: 0 0 10px 0; color: var(--gold); text-transform:uppercase;">Dealer</h3>
+                    <div style="font-size: 0.85rem; line-height: 1.5; color:#ccc; margin-bottom: 15px;" id="c4-dealer-bio">
+                        Prepare to face off in Connect-4 Stakes. Align 4 of your Spade chips to win!
+                    </div>
+                    <div style="border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px; font-size:0.85rem;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>Buy-In:</span><span id="c4-buyin" style="color: #eb3b5a;">$100</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Pot Payout:</span><span id="c4-payout" style="color: #20bf6b;">$250</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage Selection Overlay -->
+        <div id="select-overlay" class="overlay" style="display: none; z-index: 15;">
+            <h2 style="color: var(--gold); margin: 0 0 5px 0;">SELECT TABLE</h2>
+            <p style="font-size: 0.8rem; margin: 0 0 10px 0; color: #ccc;">Select any of the 50 high-stakes tables to play immediately:</p>
+            <div id="stage-grid" class="stage-grid"></div>
+            <button class="btn" id="close-select-btn" style="background: #444; border-color: #666; margin-top: 10px; width: auto; padding: 8px 20px;">Close</button>
+        </div>
+
+        <!-- Mute / Layout controls -->
+        <div style="display:flex; justify-content:space-between; width:100%; padding: 0 10px;">
+            <button class="btn" id="stage-select-btn" style="font-size: 0.8rem; padding: 6px 12px; width:auto; margin-top:10px; border-radius:4px;">Stage Select</button>
+            <button class="mute-btn" id="mute-global-btn">Mute SFX</button>
+        </div>
+    </div>
+
+    <script>
+        // --- MASTER HUB FLOWS & SCORES ---
+        let globalChips = 1000;
+        let selectedGame = null; // 'ttt', 'sort', 'match', 'c4'
+        let currentLevel = 1;
+        let isMuted = false;
+        let isPaused = false;
+        let gameStarted = false;
+
+        // --- RETRO SOUND GENERATION ---
+        let audioCtx = null;
+
+        function initAudio() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            } catch (e) {
+                console.warn("Audio Context not supported: ", e);
+            }
+        }
+
+        function playSynth(type) {
+            if (isMuted || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'clack') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(900, now);
+                    osc.frequency.exponentialRampToValueAtTime(1400, now + 0.04);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'deal') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(700, now + 0.15);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'match') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(1000, now + 0.12);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'win') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        g.gain.setValueAtTime(0.08, now + idx * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.3);
+                        o.start(now + idx * 0.08);
+                        o.stop(now + idx * 0.08 + 0.3);
+                    });
+                } else if (type === 'lose') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(280, now);
+                    osc.frequency.linearRampToValueAtTime(80, now + 0.5);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                }
+            } catch (e) {
+                console.warn("Sound play failed: ", e);
+            }
+        }
+
+        // --- DETERMINISTIC SEED MATH ---
+        function seededRandom(seed) {
+            let x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // --- NAVIGATION SCREEN FLOWS ---
+        function updateGlobalChipsHUD() {
+            document.getElementById('global-chips-val').innerText = `$${globalChips.toLocaleString()}`;
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+
+            if (screenId === 'screen-lobby') {
+                document.getElementById('btn-return-lobby').style.display = 'none';
+                document.getElementById('game-title-label').innerText = "Casino Lobby";
+                gameStarted = false;
+            } else {
+                document.getElementById('btn-return-lobby').style.display = 'block';
+            }
+        }
+
+        function openGameSelection(gameKey) {
+            initAudio();
+            selectedGame = gameKey;
+
+            let labels = { ttt: "Tic-Tac-Toe Select", sort: "Chip Sort Select", match: "Match-3 Select", c4: "Connect-4 Select" };
+            document.getElementById('game-title-label').innerText = labels[gameKey];
+            document.getElementById('level-select-title').innerText = `${labels[gameKey].replace("Select", "")} - Tables`;
+
+            populateLevelGrid();
+            showScreen('screen-level-select');
+        }
+
+        function populateLevelGrid() {
+            const container = document.getElementById('level-grid-container');
+            if (container) {
+                container.innerHTML = '';
+                for (let i = 1; i <= 50; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'level-btn';
+                    btn.innerText = i;
+
+                    if (i <= 15) btn.classList.add('easy');
+                    else if (i <= 35) btn.classList.add('medium');
+                    else btn.classList.add('hard');
+
+                    btn.addEventListener('click', () => {
+                        currentLevel = i;
+                        launchGame(selectedGame, i);
+                    });
+                    container.appendChild(btn);
+                }
+            }
+
+            const stageGrid = document.getElementById('stage-grid');
+            if (stageGrid) {
+                stageGrid.innerHTML = '';
+                for (let i = 1; i <= 50; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'stage-btn';
+                    btn.innerText = i;
+
+                    let tier = getDifficultyTier(i);
+                    if (tier === "EASY SEAT") btn.classList.add('easy');
+                    else if (tier === "MID STAKES") btn.classList.add('medium');
+                    else btn.classList.add('hard');
+
+                    btn.addEventListener('click', () => {
+                        currentLevel = i;
+                        document.getElementById('select-overlay').style.display = 'none';
+                        launchGame(selectedGame, i);
+                        isPaused = false;
+                    });
+                    stageGrid.appendChild(btn);
+                }
+            }
+        }
+
+        function getDifficultyTier(lvl) {
+            if (lvl <= 15) return "EASY SEAT";
+            if (lvl <= 35) return "MID STAKES";
+            return "HIGH ROLLER";
+        }
+
+        function launchGame(gameKey, lvl) {
+            closeToast();
+            gameStarted = true;
+            if (gameKey === 'ttt') {
+                document.getElementById('game-title-label').innerText = `Tic-Tac-Toe: Stage ${lvl}`;
+                showScreen('stage-ttt');
+                initTicTacToe(lvl);
+            } else if (gameKey === 'sort') {
+                document.getElementById('game-title-label').innerText = `Chip Sort: Stage ${lvl}`;
+                showScreen('stage-sort');
+                initChipSort(lvl);
+            } else if (gameKey === 'match') {
+                document.getElementById('game-title-label').innerText = `Match-3: Stage ${lvl}`;
+                showScreen('stage-match');
+                initMatchThree(lvl);
+            } else if (gameKey === 'c4') {
+                document.getElementById('game-title-label').innerText = `Connect-4: Stage ${lvl}`;
+                showScreen('stage-c4');
+                initConnectFour(lvl);
+            }
+        }
+
+        // --- TOAST/POPUP MECHANICS ---
+        let currentToastCallback = null;
+        function showToast(header, body, buttonText, callback) {
+            document.getElementById('toast-header').innerText = header;
+            document.getElementById('toast-body').innerText = body;
+            document.getElementById('toast-btn').innerText = buttonText;
+            document.getElementById('toast-modal').classList.add('active');
+            currentToastCallback = callback;
+        }
+
+        function closeToast() {
+            document.getElementById('toast-modal').classList.remove('active');
+        }
+
+        document.getElementById('toast-btn').addEventListener('click', () => {
+            closeToast();
+            if (currentToastCallback) {
+                currentToastCallback();
+            }
+        });
+
+        document.getElementById('btn-return-lobby').addEventListener('click', () => {
+            showScreen('screen-lobby');
+        });
+
+        document.getElementById('mute-global-btn').addEventListener('click', () => {
+            isMuted = !isMuted;
+            document.getElementById('mute-global-btn').innerText = isMuted ? "Unmute SFX" : "Mute SFX";
+        });
+
+
+        // ==========================================
+        // --- GAME 1: TIC-TAC-TOE COMPONENT ---
+        // ==========================================
+        let tttBoard = Array(9).fill(null);
+        let tttActive = false;
+        let tttBuyIn = 100;
+        let tttPayout = 250;
+
+        const dealersList = [
+            "Blind Doc", "Drunk Doc", "Card Shark Billy", "Rattlesnake Slim",
+            "Marshal Vance", "Wild-Eyed Kate", "Dead-Eye Dan", "Dealer Pete",
+            "Saloon Boss Vance", "Casino King Monty"
+        ];
+
+        function initTicTacToe(lvl) {
+            tttBoard = Array(9).fill(null);
+            document.querySelectorAll('.ttt-cell').forEach(cell => {
+                cell.innerHTML = '';
+                cell.classList.remove('taken');
+            });
+
+            tttBuyIn = 50 + (lvl - 1) * 20;
+            tttPayout = Math.floor(tttBuyIn * 2.2);
+
+            let dealerName = dealersList[(lvl - 1) % dealersList.length] + ` #${Math.ceil(lvl / 10)}`;
+            document.getElementById('ttt-dealer-name').innerText = dealerName;
+            document.getElementById('ttt-buyin').innerText = `$${tttBuyIn.toLocaleString()}`;
+            document.getElementById('ttt-payout').innerText = `$${tttPayout.toLocaleString()}`;
+
+            let difficultyWord = lvl <= 15 ? "novice" : (lvl <= 35 ? "seasoned" : "expert");
+            document.getElementById('ttt-dealer-bio').innerText = 
+                `Opponent is ${dealerName}, a ${difficultyWord} card handler from west Texas. Standard rules apply. Place 3 Spades in a line to take the pot!`;
+
+            if (globalChips < tttBuyIn) {
+                showToast("STAKES BLOCKED", "We topped you up with a $200 free credit!", "Thanks!", () => {
+                    globalChips += 200;
+                    updateGlobalChipsHUD();
+                    initTicTacToe(lvl);
+                });
+                tttActive = false;
+                return;
+            }
+
+            globalChips -= tttBuyIn;
+            updateGlobalChipsHUD();
+            tttActive = true;
+        }
+
+        document.querySelectorAll('.ttt-cell').forEach(cell => {
+            cell.addEventListener('click', () => {
+                if (!tttActive) return;
+                let idx = parseInt(cell.getAttribute('data-idx'));
+                if (tttBoard[idx] !== null) return;
+
+                tttBoard[idx] = 'P';
+                cell.innerHTML = `<span class="suit-spade">♠</span>`;
+                cell.classList.add('taken');
+                playSynth('deal');
+
+                if (checkTTTWin('P')) {
+                    endTTTGame('win');
+                    return;
+                }
+                if (tttBoard.every(c => c !== null)) {
+                    endTTTGame('tie');
+                    return;
+                }
+
+                tttActive = false;
+                setTimeout(() => {
+                    makeAIMove();
+                }, 400);
+            });
+        });
+
+        function makeAIMove() {
+            if (tttBoard.every(c => c !== null)) return;
+
+            let randomBlunderChance = Math.max(0.1, 0.8 - (currentLevel * 0.02)); 
+            let choice = -1;
+
+            if (Math.random() > randomBlunderChance) {
+                choice = findTTTBestIndex('AI');
+                if (choice === -1) choice = findTTTBestIndex('P');
+            }
+
+            if (choice === -1) {
+                if (tttBoard[4] === null) choice = 4;
+            }
+            if (choice === -1) {
+                let corners = [0, 2, 6, 8].filter(c => tttBoard[c] === null);
+                if (corners.length > 0) choice = corners[Math.floor(Math.random() * corners.length)];
+            }
+            if (choice === -1) {
+                let empties = tttBoard.map((c, i) => c === null ? i : null).filter(c => c !== null);
+                choice = empties[Math.floor(Math.random() * empties.length)];
+            }
+
+            tttBoard[choice] = 'AI';
+            let cell = document.querySelector(`.ttt-cell[data-idx="${choice}"]`);
+            cell.innerHTML = `<span class="suit-heart">♥</span>`;
+            cell.classList.add('taken');
+            playSynth('deal');
+
+            if (checkTTTWin('AI')) {
+                endTTTGame('lose');
+                return;
+            }
+            if (tttBoard.every(c => c !== null)) {
+                endTTTGame('tie');
+                return;
+            }
+
+            tttActive = true;
+        }
+
+        function findTTTBestIndex(playerKey) {
+            const lines = [
+                [0,1,2], [3,4,5], [6,7,8],
+                [0,3,6], [1,4,7], [2,5,8],
+                [0,4,8], [2,4,6]
+            ];
+            for (let line of lines) {
+                let cells = line.map(idx => tttBoard[idx]);
+                let matches = cells.filter(c => c === playerKey).length;
+                let emptyCount = cells.filter(c => c === null).length;
+                if (matches === 2 && emptyCount === 1) {
+                    return line[cells.indexOf(null)];
+                }
+            }
+            return -1;
+        }
+
+        function checkTTTWin(playerKey) {
+            const lines = [
+                [0,1,2], [3,4,5], [6,7,8],
+                [0,3,6], [1,4,7], [2,5,8],
+                [0,4,8], [2,4,6]
+            ];
+            return lines.some(line => line.every(idx => tttBoard[idx] === playerKey));
+        }
+
+        function endTTTGame(outcome) {
+            tttActive = false;
+            if (outcome === 'win') {
+                playSynth('win');
+                globalChips += tttPayout;
+                updateGlobalChipsHUD();
+                showToast("YOU WON!", `You beat the dealer and won $${tttPayout.toLocaleString()}!`, "Continue", () => {
+                    advanceToNextLevelSelect();
+                });
+            } else if (outcome === 'lose') {
+                playSynth('lose');
+                showToast("DEALER WINS!", `The dealer took the pot. Try again!`, "Replay", () => {
+                    initTicTacToe(currentLevel);
+                });
+            } else {
+                playSynth('clack');
+                let split = Math.floor(tttBuyIn / 2);
+                globalChips += split;
+                updateGlobalChipsHUD();
+                showToast("SPLIT POT!", `Draw game. Half of your buy-in ($${split}) returned.`, "Replay", () => {
+                    initTicTacToe(currentLevel);
+                });
+            }
+        }
+
+
+        // ==========================================
+        // --- GAME 2: CASINO CHIP SORT COMPONENT ---
+        // ==========================================
+        let tubes = [];
+        let selectedTubeIndex = null;
+        const chipColors = ["#eb3b5a", "#2d98da", "#20bf6b", "#ffd700", "#a55eea", "#fa8231", "#12cbc4"];
+
+        function initChipSort(lvl) {
+            selectedTubeIndex = null;
+
+            let numColors = Math.min(7, 2 + Math.floor(lvl / 8)); 
+            let totalTubes = numColors + 2; 
+
+            let chipPool = [];
+            for (let c = 0; c < numColors; c++) {
+                for (let count = 0; count < 4; count++) {
+                    chipPool.push(chipColors[c]);
+                }
+            }
+
+            for (let i = chipPool.length - 1; i > 0; i--) {
+                const j = Math.floor(seededRandom(lvl * 110 + i) * (i + 1));
+                [chipPool[i], chipPool[j]] = [chipPool[j], chipPool[i]];
+            }
+
+            tubes = [];
+            for (let t = 0; t < numColors; t++) {
+                let slice = chipPool.slice(t * 4, t * 4 + 4);
+                tubes.push(slice.map(color => ({ color })));
+            }
+            for (let t = 0; t < 2; t++) {
+                tubes.push([]);
+            }
+
+            renderChipSortUI();
+        }
+
+        function renderChipSortUI() {
+            const container = document.getElementById('tubes-area-container');
+            container.innerHTML = '';
+
+            tubes.forEach((tube, tIdx) => {
+                const tubeDiv = document.createElement('div');
+                tubeDiv.className = `tube ${selectedTubeIndex === tIdx ? 'selected' : ''}`;
+                tubeDiv.addEventListener('click', () => handleTubeClick(tIdx));
+
+                tube.forEach(chip => {
+                    const chipDiv = document.createElement('div');
+                    chipDiv.className = 'sort-chip';
+                    chipDiv.style.backgroundColor = chip.color;
+                    tubeDiv.appendChild(chipDiv);
+                });
+
+                container.appendChild(tubeDiv);
+            });
+        }
+
+        function handleTubeClick(tIdx) {
+            if (selectedTubeIndex === null) {
+                if (tubes[tIdx].length > 0) {
+                    selectedTubeIndex = tIdx;
+                    playSynth('clack');
+                    renderChipSortUI();
+                }
+            } else {
+                if (selectedTubeIndex === tIdx) {
+                    selectedTubeIndex = null;
+                    playSynth('clack');
+                    renderChipSortUI();
+                } else {
+                    let sourceTube = tubes[selectedTubeIndex];
+                    let destTube = tubes[tIdx];
+
+                    if (destTube.length < 4) {
+                        let movingChip = sourceTube[sourceTube.length - 1];
+                        let canMove = false;
+
+                        if (destTube.length === 0) {
+                            canMove = true;
+                        } else {
+                            let topDestChip = destTube[destTube.length - 1];
+                            if (topDestChip.color === movingChip.color) {
+                                canMove = true;
+                            }
+                        }
+
+                        if (canMove) {
+                            destTube.push(sourceTube.pop());
+                            selectedTubeIndex = null;
+                            playSynth('deal');
+                            renderChipSortUI();
+
+                            if (checkChipSortWin()) {
+                                setTimeout(() => {
+                                    playSynth('win');
+                                    let winChips = 200 + currentLevel * 30;
+                                    globalChips += winChips;
+                                    updateGlobalChipsHUD();
+                                    showToast("TABLE CLEARED!", `Sorted perfectly! Received $${winChips.toLocaleString()} Chips.`, "Continue", () => {
+                                        advanceToNextLevelSelect();
+                                    });
+                                }, 300);
+                            }
+                        } else {
+                            selectedTubeIndex = null;
+                            playSynth('clack');
+                            renderChipSortUI();
+                        }
+                    } else {
+                        selectedTubeIndex = null;
+                        playSynth('clack');
+                        renderChipSortUI();
+                    }
+                }
+            }
+        }
+
+        function checkChipSortWin() {
+            for (let tube of tubes) {
+                if (tube.length === 0) continue;
+                if (tube.length !== 4) return false;
+                let color = tube[0].color;
+                if (!tube.every(chip => chip.color === color)) return false;
+            }
+            return true;
+        }
+
+
+        // ==========================================
+        // --- GAME 3: MATCH-3 COMPONENT ---
+        // ==========================================
+        let matchBoard = Array.from({ length: 7 }, () => Array(7).fill(null));
+        let matchMovesLeft = 25;
+        let activeDragSource = null; 
+        let activeDragMode = false;
+
+        const matchSymbols = [
+            { id: 1, char: '♠', color: '#1e272e' }, 
+            { id: 2, char: '♥', color: '#eb3b5a' }, 
+            { id: 3, char: '♦', color: '#2d98da' }, 
+            { id: 4, char: '♣', color: '#20bf6b' }, 
+            { id: 5, char: '🪙', color: '#ffd700' }  
+        ];
+
+        let target1Type = 1; 
+        let target2Type = 5; 
+        let target1Required = 15;
+        let target2Required = 15;
+        let target1Current = 0;
+        let target2Current = 0;
+
+        function getRandomTileId(seedVal) {
+            let rnd = seededRandom(seedVal);
+            return Math.floor(rnd * matchSymbols.length) + 1;
+        }
+
+        function initMatchThree(lvl) {
+            matchMovesLeft = Math.max(12, 30 - Math.floor(lvl / 2.5));
+            activeDragSource = null;
+            activeDragMode = false;
+
+            target1Type = 1 + (lvl % 3); 
+            target2Type = 5; 
+            target1Required = 10 + lvl;
+            target2Required = 10 + lvl;
+            target1Current = 0;
+            target2Current = 0;
+
+            for (let r = 0; r < 7; r++) {
+                for (let c = 0; c < 7; c++) {
+                    let seed = lvl * 200 + r * 7 + c;
+                    let symbolId = getRandomTileId(seed);
+                    while ((c >= 2 && matchBoard[r][c-1] === symbolId && matchBoard[r][c-2] === symbolId) ||
+                           (r >= 2 && matchBoard[r-1][c] === symbolId && matchBoard[r-2][c] === symbolId)) {
+                        seed += 13;
+                        symbolId = getRandomTileId(seed);
+                    }
+                    matchBoard[r][c] = symbolId;
+                }
+            }
+
+            renderMatchBoardUI();
+            updateMatchHUD();
+        }
+
+        function renderMatchBoardUI() {
+            const container = document.getElementById('match-board-container');
+            container.innerHTML = '';
+
+            for (let r = 0; r < 7; r++) {
+                for (let c = 0; c < 7; c++) {
+                    const tileDiv = document.createElement('div');
+                    tileDiv.className = 'match-tile';
+                    tileDiv.setAttribute('data-r', r);
+                    tileDiv.setAttribute('data-c', c);
+
+                    if (activeDragSource && activeDragSource.r === r && activeDragSource.c === c) {
+                        tileDiv.classList.add('selected');
+                    }
+
+                    let valId = matchBoard[r][c];
+                    if (valId) {
+                        let sym = matchSymbols.find(s => s.id === valId);
+                        tileDiv.innerHTML = `<span style="color: ${sym.color}">${sym.char}</span>`;
+                    } else {
+                        tileDiv.innerHTML = '';
+                    }
+
+                    setupMatchTileEvents(tileDiv, r, c);
+                    container.appendChild(tileDiv);
+                }
+            }
+        }
+
+        function setupMatchTileEvents(tileDiv, r, c) {
+            const startDrag = (e) => {
+                if (isPaused) return;
+                activeDragMode = true;
+                activeDragSource = { r, c };
+                renderMatchBoardUI();
+                playSynth('clack');
+            };
+
+            tileDiv.addEventListener('mousedown', startDrag);
+            tileDiv.addEventListener('touchstart', startDrag);
+
+            tileDiv.addEventListener('mouseenter', () => {
+                if (isPaused || !activeDragMode || !activeDragSource) return;
+                triggerTileEvaluation(r, c);
+            });
+
+            tileDiv.addEventListener('touchmove', (e) => {
+                if (isPaused || !activeDragMode || !activeDragSource) return;
+                let touch = e.touches[0];
+                let target = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (target && target.classList.contains('match-tile')) {
+                    let tr = parseInt(target.getAttribute('data-r'));
+                    let tc = parseInt(target.getAttribute('data-c'));
+                    if (!isNaN(tr) && !isNaN(tc)) {
+                        triggerTileEvaluation(tr, tc);
+                    }
+                }
+            });
+        }
+
+        function triggerTileEvaluation(tr, tc) {
+            let diffR = Math.abs(activeDragSource.r - tr);
+            let diffC = Math.abs(activeDragSource.c - tc);
+
+            if ((diffR === 1 && diffC === 0) || (diffR === 0 && diffC === 1)) {
+                let r1 = activeDragSource.r;
+                let c1 = activeDragSource.c;
+                activeDragMode = false;
+                activeDragSource = null;
+                executeSwap(r1, c1, tr, tc);
+            }
+        }
+
+        window.addEventListener('mouseup', () => {
+            if (activeDragMode) {
+                activeDragMode = false;
+                activeDragSource = null;
+                renderMatchBoardUI();
+            }
+        });
+        window.addEventListener('touchend', () => {
+            if (activeDragMode) {
+                activeDragMode = false;
+                activeDragSource = null;
+                renderMatchBoardUI();
+            }
+        });
+
+        function executeSwap(r1, c1, r2, c2) {
+            let temp = matchBoard[r2][c2];
+            matchBoard[r2][c2] = matchBoard[r1][c1];
+            matchBoard[r1][c1] = temp;
+
+            let evaluation = checkMatchCombos();
+            if (evaluation.matchesFound) {
+                matchMovesLeft--;
+                processMatches(evaluation.matchesMap);
+            } else {
+                matchBoard[r1][c1] = matchBoard[r2][c2];
+                matchBoard[r2][c2] = temp;
+                playSynth('clack');
+                renderMatchBoardUI();
+            }
+        }
+
+        function checkMatchCombos() {
+            let matchesMap = Array.from({ length: 7 }, () => Array(7).fill(false));
+            let matchesFound = false;
+
+            for (let r = 0; r < 7; r++) {
+                for (let c = 0; c < 5; c++) {
+                    let id = matchBoard[r][c];
+                    if (id && matchBoard[r][c+1] === id && matchBoard[r][c+2] === id) {
+                        matchesMap[r][c] = true;
+                        matchesMap[r][c+1] = true;
+                        matchesMap[r][c+2] = true;
+                        matchesFound = true;
+                    }
+                }
+            }
+
+            for (let c = 0; c < 7; c++) {
+                for (let r = 0; r < 5; r++) {
+                    let id = matchBoard[r][c];
+                    if (id && matchBoard[r+1][c] === id && matchBoard[r+2][c] === id) {
+                        matchesMap[r][c] = true;
+                        matchesMap[r+1][c] = true;
+                        matchesMap[r+2][c] = true;
+                        matchesFound = true;
+                    }
+                }
+            }
+
+            return { matchesFound, matchesMap };
+        }
+
+        function processMatches(matchesMap) {
+            isPaused = true;
+            playSynth('match');
+
+            const cells = document.getElementById('match-board-container').children;
+            for (let r = 0; r < 7; r++) {
+                for (let c = 0; c < 7; c++) {
+                    if (matchesMap[r][c]) {
+                        let idx = r * 7 + c;
+                        cells[idx].classList.add('clearing');
+
+                        let symbolId = matchBoard[r][c];
+                        if (symbolId === target1Type) target1Current++;
+                        if (symbolId === target2Type) target2Current++;
+                        
+                        matchBoard[r][c] = null;
+                    }
+                }
+            }
+
+            setTimeout(() => {
+                applyMatchBoardGravity();
+                renderMatchBoardUI();
+                updateMatchHUD();
+
+                let cascadeEval = checkMatchCombos();
+                if (cascadeEval.matchesFound) {
+                    processMatches(cascadeEval.matchesMap);
+                } else {
+                    isPaused = false;
+                    evaluateMatchWinLoseState();
+                }
+            }, 250);
+        }
+
+        function applyMatchBoardGravity() {
+            for (let c = 0; c < 7; c++) {
+                let writeRow = 6;
+                for (let r = 6; r >= 0; r--) {
+                    if (matchBoard[r][c] !== null) {
+                        matchBoard[writeRow][c] = matchBoard[r][c];
+                        if (writeRow !== r) {
+                            matchBoard[r][c] = null;
+                        }
+                        writeRow--;
+                    }
+                }
+                for (let r = writeRow; r >= 0; r--) {
+                    let randomSeed = Math.random() * 500;
+                    matchBoard[r][c] = getRandomTileId(randomSeed);
+                }
+            }
+        }
+
+        function updateMatchHUD() {
+            document.getElementById('match-moves-left').innerText = matchMovesLeft;
+
+            let sym1 = matchSymbols.find(s => s.id === target1Type);
+            let sym2 = matchSymbols.find(s => s.id === target2Type);
+
+            let t1Text = `<span>${sym1.char} ${sym1.char === '♠' ? 'Spades' : (sym1.char === '♥' ? 'Hearts' : 'Diamonds')}</span><span>${Math.min(target1Required, target1Current)}/${target1Required}</span>`;
+            document.getElementById('match-goal-1').innerHTML = t1Text;
+
+            let t2Text = `<span>🪙 Gold Coins</span><span>${Math.min(target2Required, target2Current)}/${target2Required}</span>`;
+            document.getElementById('match-goal-2').innerHTML = t2Text;
+        }
+
+        function evaluateMatchWinLoseState() {
+            if (target1Current >= target1Required && target2Current >= target2Required) {
+                playSynth('win');
+                let bonus = 250 + currentLevel * 50;
+                globalChips += bonus;
+                updateGlobalChipsHUD();
+                showToast("GOALS MET!", `Won $${bonus.toLocaleString()} Chips.`, "Continue", () => {
+                    advanceToNextLevelSelect();
+                });
+                isPaused = true;
+            } else if (matchMovesLeft <= 0) {
+                playSynth('lose');
+                showToast("OUT OF MOVES!", `Try again!`, "Replay", () => {
+                    isPaused = false;
+                    initMatchThree(currentLevel);
+                });
+                isPaused = true;
+            }
+        }
+
+
+        // ==========================================
+        // --- GAME 4: CONNECT-4 COMPONENT ---
+        // ==========================================
+        let c4Board = Array.from({ length: 6 }, () => Array(7).fill(null));
+        let c4Active = false;
+        let c4BuyIn = 100;
+        let c4Payout = 250;
+
+        function initConnectFour(lvl) {
+            c4Board = Array.from({ length: 6 }, () => Array(7).fill(null));
+            renderConnectFourUI();
+
+            c4BuyIn = 60 + (lvl - 1) * 25;
+            c4Payout = Math.floor(c4BuyIn * 2.2);
+
+            let dealerName = dealersList[(lvl - 1) % dealersList.length] + ` #${Math.ceil(lvl / 10)}`;
+            document.getElementById('c4-dealer-name').innerText = dealerName;
+            document.getElementById('c4-buyin').innerText = `$${c4BuyIn.toLocaleString()}`;
+            document.getElementById('c4-payout').innerText = `$${c4Payout.toLocaleString()}`;
+
+            let difficultyWord = lvl <= 15 ? "novice" : (lvl <= 35 ? "seasoned" : "expert");
+            document.getElementById('c4-dealer-bio').innerText = 
+                `Facing ${dealerName} in a high-stakes ${difficultyWord} Connect-4 rack. Line up 4 Spades to claim the pot!`;
+
+            if (globalChips < c4BuyIn) {
+                showToast("STAKES BLOCKED", "We credited you $200 free chips!", "Thanks!", () => {
+                    globalChips += 200;
+                    updateGlobalChipsHUD();
+                    initConnectFour(lvl);
+                });
+                c4Active = false;
+                return;
+            }
+
+            globalChips -= c4BuyIn;
+            updateGlobalChipsHUD();
+            c4Active = true;
+        }
+
+        function renderConnectFourUI() {
+            const container = document.getElementById('c4-board-container');
+            container.innerHTML = '';
+
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 7; c++) {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'c4-cell';
+                    
+                    let val = c4Board[r][c];
+                    if (val === 'P') {
+                        cellDiv.innerHTML = `<span class="suit-spade">♠</span>`;
+                    } else if (val === 'AI') {
+                        cellDiv.innerHTML = `<span class="suit-heart">♥</span>`;
+                    } else {
+                        cellDiv.innerHTML = '';
+                    }
+
+                    cellDiv.addEventListener('click', () => triggerC4Drop(c));
+                    container.appendChild(cellDiv);
+                }
+            }
+        }
+
+        function triggerC4Drop(c) {
+            if (!c4Active || isPaused) return;
+
+            let landedRow = dropC4Chip(c, 'P');
+            if (landedRow === -1) {
+                playSynth('clack'); 
+                return;
+            }
+
+            playSynth('deal');
+            renderConnectFourUI();
+
+            if (checkC4Win('P')) {
+                endC4Game('win');
+                return;
+            }
+            if (isC4BoardFull()) {
+                endC4Game('tie');
+                return;
+            }
+
+            c4Active = false;
+            setTimeout(() => {
+                makeC4AIMove();
+            }, 450);
+        }
+
+        function dropC4Chip(c, playerKey) {
+            for (let r = 5; r >= 0; r--) {
+                if (c4Board[r][c] === null) {
+                    c4Board[r][c] = playerKey;
+                    return r;
+                }
+            }
+            return -1;
+        }
+
+        function makeC4AIMove() {
+            if (isC4BoardFull()) return;
+
+            let choice = -1;
+            let blunderChance = Math.max(0.05, 0.75 - (currentLevel * 0.02));
+
+            if (Math.random() > blunderChance) {
+                for (let c = 0; c < 7; c++) {
+                    let r = simulateC4Drop(c);
+                    if (r !== -1) {
+                        c4Board[r][c] = 'AI';
+                        let won = checkC4Win('AI');
+                        c4Board[r][c] = null; 
+                        if (won) {
+                            choice = c;
+                            break;
+                        }
+                    }
+                }
+
+                if (choice === -1) {
+                    for (let c = 0; c < 7; c++) {
+                        let r = simulateC4Drop(c);
+                        if (r !== -1) {
+                            c4Board[r][c] = 'P';
+                            let won = checkC4Win('P');
+                            c4Board[r][c] = null; 
+                            if (won) {
+                                choice = c;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (choice === -1) {
+                let columnsPriority = [3, 2, 4, 1, 5, 0, 6];
+                for (let c of columnsPriority) {
+                    if (simulateC4Drop(c) !== -1) {
+                        choice = c;
+                        break;
+                    }
+                }
+            }
+
+            if (choice !== -1) {
+                dropC4Chip(choice, 'AI');
+                playSynth('deal');
+                renderConnectFourUI();
+
+                if (checkC4Win('AI')) {
+                    endC4Game('lose');
+                    return;
+                }
+                if (isC4BoardFull()) {
+                    endC4Game('tie');
+                    return;
+                }
+            }
+
+            c4Active = true;
+        }
+
+        function simulateC4Drop(c) {
+            for (let r = 5; r >= 0; r--) {
+                if (c4Board[r][c] === null) {
+                    return r;
+                }
+            }
+            return -1;
+        }
+
+        function isC4BoardFull() {
+            for (let c = 0; c < 7; c++) {
+                if (c4Board[0][c] === null) return false;
+            }
+            return true;
+        }
+
+        function checkC4Win(playerKey) {
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (c4Board[r][c] === playerKey && c4Board[r][c+1] === playerKey && c4Board[r][c+2] === playerKey && c4Board[r][c+3] === playerKey) {
+                        return true;
+                    }
+                }
+            }
+            for (let c = 0; c < 7; c++) {
+                for (let r = 0; r < 3; r++) {
+                    if (c4Board[r][c] === playerKey && c4Board[r+1][c] === playerKey && c4Board[r+2][c] === playerKey && c4Board[r+3][c] === playerKey) {
+                        return true;
+                    }
+                }
+            }
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (c4Board[r][c] === playerKey && c4Board[r+1][c+1] === playerKey && c4Board[r+2][c+2] === playerKey && c4Board[r+3][c+3] === playerKey) {
+                        return true;
+                    }
+                }
+            }
+            for (let r = 3; r < 6; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (c4Board[r][c] === playerKey && c4Board[r-1][c+1] === playerKey && c4Board[r-2][c+2] === playerKey && c4Board[r-3][c+3] === playerKey) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function endC4Game(outcome) {
+            c4Active = false;
+            if (outcome === 'win') {
+                playSynth('win');
+                globalChips += c4Payout;
+                updateGlobalChipsHUD();
+                showToast("RACK CLEARED!", `You beat the dealer and won the $${c4Payout.toLocaleString()} pot!`, "Continue", () => {
+                    advanceToNextLevelSelect();
+                });
+            } else if (outcome === 'lose') {
+                playSynth('lose');
+                showToast("DEALER WINS!", `The dealer aligned four chips. Try again!`, "Replay", () => {
+                    initConnectFour(currentLevel);
+                });
+            } else {
+                playSynth('clack');
+                let split = Math.floor(c4BuyIn / 2);
+                globalChips += split;
+                updateGlobalChipsHUD();
+                showToast("SPLIT POT!", `The rack is full. You split the pot and received $${split}.`, "Replay", () => {
+                    initConnectFour(currentLevel);
+                });
+            }
+        }
+
+
+        // --- COMMON ADVANCE SYSTEM ---
+        function advanceToNextLevelSelect() {
+            isPaused = false;
+            populateLevelGrid();
+            showScreen('screen-level-select');
+        }
+
+        // --- BUTTON BINDINGS ---
+        document.getElementById('btn-return-lobby').addEventListener('click', () => {
+            showScreen('screen-lobby');
+        });
+
+        document.getElementById('mute-global-btn').addEventListener('click', () => {
+            isMuted = !isMuted;
+            document.getElementById('mute-global-btn').innerText = isMuted ? "Unmute SFX" : "Mute SFX";
+        });
+
+        document.getElementById('stage-select-btn').addEventListener('click', () => {
+            isPaused = true;
+            document.getElementById('select-overlay').style.display = 'flex';
+        });
+
+        document.getElementById('close-select-btn').addEventListener('click', () => {
+            document.getElementById('select-overlay').style.display = 'none';
+            if (gameStarted) {
+                isPaused = false;
+            }
+        });
+
+        // Initialize HUD & Selector Grid Initially
+        updateGlobalChipsHUD();
+        populateLevelGrid();
+
+    </script>
+</body>
+</html>
