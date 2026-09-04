@@ -1,0 +1,402 @@
+[
+  {
+    "slug": "snakes-n-ladders",
+    "title": "Snakes N Ladders",
+    "avatar": "\ud83d\udc0d"
+  },
+  {
+    "slug": "toxic-hop",
+    "title": "Toxic Hop",
+    "avatar": "\u2620\ufe0f"
+  },
+  {
+    "slug": "abyskeys",
+    "title": "Abyskeys",
+    "avatar": "\ud83c\udfb9"
+  },
+  {
+    "slug": "barnyard-typing",
+    "title": "Barnyard Typing",
+    "avatar": "\ud83d\udc14"
+  },
+  {
+    "slug": "battle-ships",
+    "title": "Battle Ships",
+    "avatar": "\u2694\ufe0f"
+  },
+  {
+    "slug": "blackjack-21",
+    "title": "Blackjack 21",
+    "avatar": "\ud83c\udccf"
+  },
+  {
+    "slug": "breakout",
+    "title": "Breakout",
+    "avatar": "\ud83e\uddf1"
+  },
+  {
+    "slug": "coastal-keys",
+    "title": "Coastal Keys",
+    "avatar": "\ud83c\udfb9"
+  },
+  {
+    "slug": "cowboy-hangman",
+    "title": "Cowboy Hangman",
+    "avatar": "\ud83e\udd20"
+  },
+  {
+    "slug": "flappy-bird",
+    "title": "Flappy Bird",
+    "avatar": "\ud83d\udc26"
+  },
+  {
+    "slug": "pit-boss-kong",
+    "title": "Pit Boss Kong",
+    "avatar": "\ud83e\udd8d",
+    "file": "games/pit-boss-kong.html"
+  },
+  {
+    "slug": "forest-whack-a-mole",
+    "title": "Forest Whack A Mole",
+    "avatar": "\ud83d\udd28",
+    "file": "games/forest-whack-a-mole.html"
+  },
+  {
+    "slug": "geo-dash",
+    "title": "Geo Dash",
+    "avatar": "\ud83c\udfc3",
+    "file": "games/geo-dash.html"
+  },
+  {
+    "slug": "holdem-hockey",
+    "title": "Holdem Hockey",
+    "avatar": "\ud83c\udfd2",
+    "file": "games/holdem-hockey.html"
+  },
+  {
+    "slug": "jungle-dash",
+    "title": "Jungle Dash",
+    "avatar": "\ud83c\udfc3",
+    "file": "games/jungle-dash.html"
+  },
+  {
+    "slug": "kiddy-slots",
+    "title": "Kiddy Slots",
+    "avatar": "\ud83c\udfb0",
+    "file": "games/kiddy-slots.html"
+  },
+  {
+    "slug": "maze",
+    "title": "Maze",
+    "avatar": "\ud83e\udde9",
+    "file": "games/maze.html"
+  },
+  {
+    "slug": "neon-pizza-maker",
+    "title": "Neon Pizza Maker",
+    "avatar": "\ud83c\udf55",
+    "file": "games/neon-pizza-maker.html"
+  },
+  {
+    "slug": "nova-invaders",
+    "title": "Nova Invaders",
+    "avatar": "\ud83d\udc7e",
+    "file": "games/nova-invaders.html"
+  },
+  {
+    "slug": "oby-parkour",
+    "title": "Oby Parkour",
+    "avatar": "\ud83c\udfc3",
+    "file": "games/oby-parkour.html"
+  },
+  {
+    "slug": "zoo-game",
+    "title": "Zoo Game",
+    "avatar": "\ud83e\udd81"
+  },
+  {
+    "slug": "poker-snake",
+    "title": "Poker Snake",
+    "avatar": "\ud83d\udc0d"
+  },
+  {
+    "slug": "rock-paper-scissors",
+    "title": "Rock Paper Scissors",
+    "avatar": "\u270a"
+  },
+  {
+    "slug": "royal-flush-poker",
+    "title": "Royal Flush Poker",
+    "avatar": "\ud83d\udc0d"
+  },
+  {
+    "slug": "showdown-pong",
+    "title": "Showdown Pong",
+    "avatar": "\ud83c\udfd3"
+  },
+  {
+    "slug": "sky-islands",
+    "title": "Sky Islands",
+    "avatar": "\u2601\ufe0f"
+  },
+  {
+    "slug": "stack",
+    "title": "Stack",
+    "avatar": "\ud83d\udcda"
+  },
+  {
+    "slug": "table-quartet",
+    "title": "Table Quartet",
+    "avatar": "\ud83c\udfbb"
+  },
+  {
+    "slug": "texas-tetris",
+    "title": "Texas Tetris",
+    "avatar": "\ud83e\uddf1"
+  },
+  {
+    "slug": "vaporwave-clicker",
+    "title": "Vaporwave Clicker",
+    "avatar": "\ud83c\udf38"
+  },
+  {
+    "slug": "mycelial-vault-fp-tutorial",
+    "title": "Mycelial Vault Fp Tutorial",
+    "avatar": "\ud83c\udf44",
+    "file": "games/mycelial-vault-fp-tutorial.html"
+  },
+  {
+    "slug": "kaboom-catcher-arcade-game",
+    "title": "Kaboom Catcher Arcade Game",
+    "avatar": "\ud83d\udca5",
+    "file": "games/kaboom-catcher-arcade-game.html"
+  },
+  {
+    "slug": "pool-8ball-v3-hold-hit",
+    "title": "Pool 8Ball V3 Hold Hit",
+    "avatar": "\ud83c\udfb1",
+    "file": "games/pool-8ball-v3-hold-hit.html"
+  },
+  {
+    "slug": "neon-lab-tag-ai",
+    "title": "Neon Lab Tag Ai",
+    "avatar": "\ud83d\udd2c",
+    "file": "games/neon-lab-tag-ai.html"
+  },
+  {
+    "slug": "word-search-generator",
+    "title": "Word Search Generator",
+    "avatar": "\ud83d\udd24",
+    "file": "games/word-search-generator.html"
+  },
+  {
+    "slug": "curling-shuffleboard",
+    "title": "Curling Shuffleboard",
+    "avatar": "\ud83e\udd4c",
+    "file": "games/curling-shuffleboard.html"
+  },
+  {
+    "slug": "neon-flow-solvable-edition",
+    "title": "Neon Flow Solvable Edition",
+    "avatar": "\ud83c\udf0a",
+    "file": "games/neon-flow-solvable-edition.html"
+  },
+  {
+    "slug": "neon-zuma-final",
+    "title": "Neon Zuma Final",
+    "avatar": "\ud83d\udfe2",
+    "file": "games/neon-zuma-final.html"
+  },
+  {
+    "slug": "grumpy-goblins-slingshot-original",
+    "title": "Grumpy Goblins Slingshot Original",
+    "avatar": "\ud83d\ude08",
+    "file": "games/grumpy-goblins-slingshot-original.html"
+  },
+  {
+    "slug": "plinko-peggle-neon",
+    "title": "Plinko Peggle Neon",
+    "avatar": "\ud83d\udd34",
+    "file": "games/plinko-peggle-neon.html"
+  },
+  {
+    "slug": "he-nalu-hawaii-surf",
+    "title": "He Nalu Hawaii Surf",
+    "avatar": "\ud83c\udfc4",
+    "file": "games/he-nalu-hawaii-surf.html"
+  },
+  {
+    "slug": "carnage-runway",
+    "title": "Carnage Runway",
+    "avatar": "\ud83d\udc80",
+    "file": "games/carnage-runway.html"
+  },
+  {
+    "slug": "highway-madness",
+    "title": "Highway Madness",
+    "avatar": "\ud83c\udfce\ufe0f",
+    "file": "games/highway-madness.html"
+  },
+  {
+    "slug": "bowling-lite-90s",
+    "title": "Bowling Lite 90s",
+    "avatar": "\ud83c\udfb3",
+    "file": "games/bowling-lite-90s.html"
+  },
+  {
+    "slug": "ski-slalom",
+    "title": "Ski Slalom",
+    "avatar": "\u26f7\ufe0f",
+    "file": "games/ski-slalom.html"
+  },
+  {
+    "slug": "sahara-flappy",
+    "title": "Sahara Flappy",
+    "avatar": "\ud83e\udd85",
+    "file": "games/sahara-flappy.html"
+  },
+  {
+    "slug": "bridge-builder-80s",
+    "title": "Bridge Builder 80s",
+    "avatar": "\ud83c\udf09",
+    "file": "games/bridge-builder-80s.html"
+  },
+  {
+    "slug": "darts",
+    "title": "Darts",
+    "avatar": "\ud83c\udfaf",
+    "file": "games/darts.html"
+  },
+  {
+    "slug": "medieval-archery",
+    "title": "Medieval Archery",
+    "avatar": "\ud83c\udff9",
+    "file": "games/medieval-archery.html"
+  },
+  {
+    "slug": "nyc-rush-hour",
+    "title": "NYC Rush Hour",
+    "avatar": "\ud83d\ude95",
+    "file": "games/nyc-rush-hour.html"
+  },
+  {
+    "slug": "disco-chess-full-rules",
+    "title": "Disco Chess",
+    "avatar": "\u265f\ufe0f",
+    "file": "games/disco-chess-full-rules.html"
+  },
+  {
+    "slug": "dino-jump",
+    "title": "Dino Jump",
+    "avatar": "\ud83e\udd96",
+    "file": "games/dino-jump.html"
+  },
+  {
+    "slug": "backyard-tank-duel",
+    "title": "Backyard Tank Duel",
+    "avatar": "\ud83d\udca5",
+    "file": "games/backyard-tank-duel.html"
+  },
+  {
+    "slug": "nebula-mancala",
+    "title": "Nebula Mancala",
+    "avatar": "\ud83c\udf0c",
+    "file": "games/nebula-mancala.html"
+  },
+  {
+    "slug": "dominoes-neo-tokyo",
+    "title": "Dominoes Neo Tokyo",
+    "avatar": "\ud83c\udc04",
+    "file": "games/dominoes-neo-tokyo.html"
+  },
+  {
+    "slug": "desert-klondike",
+    "title": "Desert Klondike",
+    "avatar": "\u2660\ufe0f",
+    "file": "games/desert-klondike.html"
+  },
+  {
+    "slug": "cosmic-bodega-mahjong",
+    "title": "Cosmic Bodega Mahjong",
+    "avatar": "\ud83c\udc04",
+    "file": "games/cosmic-bodega-mahjong.html"
+  },
+  {
+    "slug": "deep-sea-pipe-panic",
+    "title": "Deep Sea Pipe Panic",
+    "avatar": "\ud83c\udf0a",
+    "file": "games/deep-sea-pipe-panic.html"
+  },
+  {
+    "slug": "midnight-monogram",
+    "title": "Midnight Monogram",
+    "avatar": "\ud83d\udd24",
+    "file": "games/midnight-monogram.html"
+  },
+  {
+    "slug": "hotwire-maze",
+    "title": "Hotwire Maze",
+    "avatar": "\u26a1",
+    "file": "games/hotwire-maze.html"
+  },
+  {
+    "slug": "dino-snake",
+    "title": "Dino Snake",
+    "avatar": "\ud83d\udc0d",
+    "file": "games/dino-snake.html"
+  },
+  {
+    "slug": "jungle-match",
+    "title": "Jungle Match",
+    "avatar": "\ud83c\udf34",
+    "file": "games/jungle-match.html"
+  },
+  {
+    "slug": "backyard-minesweeper",
+    "title": "Backyard Minesweeper",
+    "avatar": "\ud83d\udca3",
+    "file": "games/backyard-minesweeper.html"
+  },
+  {
+    "slug": "bubble-shoot",
+    "title": "Bubble Shoot",
+    "avatar": "\ud83e\udee7",
+    "file": "games/bubble-shoot.html"
+  },
+  {
+    "slug": "dino-io",
+    "title": "Dino Io",
+    "avatar": "\ud83e\udd96",
+    "file": "games/dino-io.html"
+  },
+  {
+    "slug": "disco-checkers",
+    "title": "Disco Checkers",
+    "avatar": "\u265f\ufe0f",
+    "file": "games/disco-checkers.html"
+  },
+  {
+    "slug": "galactic-asteroids",
+    "title": "Galactic Asteroids",
+    "avatar": "\ud83d\ude80",
+    "file": "games/galactic-asteroids.html"
+  },
+  {
+    "slug": "high-school-trivia",
+    "title": "High School Trivia",
+    "avatar": "\ud83e\udde0",
+    "file": "games/high-school-trivia.html"
+  },
+  {
+    "slug": "rdr2-2048",
+    "title": "Rdr2 2048",
+    "avatar": "\ud83d\udd22",
+    "file": "games/rdr2-2048.html"
+  },
+  {
+    "slug": "rotorblood-ww3",
+    "title": "Rotorblood Ww3",
+    "avatar": "\ud83e\ude78",
+    "file": "games/rotorblood-ww3.html"
+  }
+]
